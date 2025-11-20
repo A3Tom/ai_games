@@ -69,6 +69,7 @@ export class Game {
         // Get UI elements
         this.speedometerElement = document.getElementById('speedometer');
         this.scoreElement = document.getElementById('score-value');
+        this.angleElement = document.getElementById('angle-value');
     }
     
     _setupEventListeners() {
@@ -119,6 +120,7 @@ export class Game {
         
         // Update UI
         this._updateSpeedometer();
+        this._updateDriftAngle();
     }
     
     _updateCamera() {
@@ -154,9 +156,23 @@ export class Game {
         if (isDrifting && 
             kmh >= CONFIG.driftScoreMinSpeed && 
             angleDelta >= CONFIG.driftScoreMinAngle) {
-            this.score += CONFIG.driftScorePerTick;
-            this.scoreElement.innerText = this.score.toLocaleString();
+            
+            // Calculate multipliers
+            const speedBonus = ((kmh - CONFIG.driftScoreMinSpeed) / 10) * CONFIG.driftScoreSpeedBonus;
+            const angleBonus = angleDelta * CONFIG.driftScoreAngleBonus;
+            const totalMultiplier = 1 + speedBonus + angleBonus;
+            
+            // Award points with multiplier
+            const points = CONFIG.driftScorePerTick * totalMultiplier;
+            this.score += points;
+            this.scoreElement.innerText = Math.floor(this.score).toLocaleString();
         }
+    }
+    
+    _updateDriftAngle() {
+        const angleDelta = this.car.getAngleDelta();
+        const degrees = Math.round(angleDelta * (180 / Math.PI)); // Convert radians to degrees
+        this.angleElement.innerText = `${degrees}°`;
     }
     
     _render() {

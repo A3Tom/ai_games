@@ -63,7 +63,9 @@ export const CONFIG = {
     
     // Gameplay
     speedMultiplier: 50,          // Convert internal speed to km/h for display
-    driftScoreMinSpeed: 45,       // Minimum km/h speed to earn drift points
+    driftScoreMinSpeed: 52,       // Minimum km/h speed to earn drift points
     driftScoreMinAngle: 0.03,     // Minimum turning angle (radians) to count as drifting
-    driftScorePerTick: 1          // Points awarded per frame while drifting above min speed
+    driftScorePerTick: 1,         // Base points awarded per frame while drifting
+    driftScoreSpeedBonus: 0.5,    // Bonus multiplier per 10 km/h above minimum
+    driftScoreAngleBonus: 20      // Bonus multiplier for drift angle (higher = more points for sharper turns)
 };

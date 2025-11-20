@@ -80,6 +80,25 @@
             display: block;
             margin-bottom: 5px;
         }
+        #drift-angle {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 15px;
+            border-radius: 8px;
+        }
+        #drift-angle .label {
+            font-size: 12px;
+            color: #ffdd44;
+            display: block;
+            margin-bottom: 3px;
+        }
     </style>
 </head>
 <body>
@@ -98,6 +117,11 @@
     </div>
 
     <div id="speedometer">0 km/h</div>
+
+    <div id="drift-angle">
+        <span class="label">DRIFT ANGLE</span>
+        <span id="angle-value">0°</span>
+    </div>
 
     <!-- Main game entry point using ES6 modules -->
     <script type="module">
