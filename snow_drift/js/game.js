@@ -220,10 +220,10 @@ export class Game {
         
         // Determine Ned level
         const nedLevels = [
-            { threshold: 2500, name: 'BURBERRY N TONIC', color: '#FFD700' },
-            { threshold: 1500, name: 'ALL SEASON MERAPEAK', color: '#FF8C00' },
-            { threshold: 750, name: 'CHECK MA NEW LACOSTE TRACKIE', color: '#4169E1' },
-            { threshold: 250, name: 'BASIC BAM', color: '#90EE90' },
+            { threshold: 2500, name: 'A god amungst the neds, burberry cap on n tonic in hand. Yeev made it.', color: '#FFD700' },
+            { threshold: 1500, name: 'Approachin the top of the tonic totem pole, a classic merapeak is yours', color: '#FF8C00' },
+            { threshold: 750, name: 'You\'ve earned a class new trackie top!', color: '#4169E1' },
+            { threshold: 250, name: 'Yer just a basic wee bam, get sliding about the carparks', color: '#90EE90' },
             { threshold: 0, name: 'NAE LEVEL', color: '#808080' }
         ];
         
@@ -266,20 +266,79 @@ export class Game {
             text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
         `;
         
-        // Thermometer container
+        // Buckfast bottle container (wrapper for label positioning)
+        const bottleWrapper = document.createElement('div');
+        bottleWrapper.style.cssText = `
+            position: relative;
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+        `;
+        
+        // Buckfast bottle (thermometer styled as tonic wine bottle)
         const thermometerContainer = document.createElement('div');
         thermometerContainer.style.cssText = `
             position: relative;
-            width: 80px;
-            height: 400px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 40px;
-            margin-bottom: 30px;
+            width: 100px;
+            height: 450px;
+            background: linear-gradient(to right, #1a0d00, #3d2000, #1a0d00);
+            border-radius: 10px 10px 15px 15px;
+            margin: 0 20px;
             overflow: hidden;
-            border: 3px solid rgba(255, 255, 255, 0.5);
+            border: 4px solid #8B4513;
+            box-shadow: inset -5px 0 10px rgba(0,0,0,0.5), 0 0 20px rgba(0,0,0,0.8);
         `;
         
-        // Thermometer fill
+        // Bottle neck
+        const bottleNeck = document.createElement('div');
+        bottleNeck.style.cssText = `
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 35px;
+            background: linear-gradient(to right, #1a0d00, #3d2000, #1a0d00);
+            border: 3px solid #8B4513;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+        `;
+        
+        // Bottle cap
+        const bottleCap = document.createElement('div');
+        bottleCap.style.cssText = `
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 35px;
+            height: 12px;
+            background: #FFD700;
+            border: 2px solid #B8860B;
+            border-radius: 3px 3px 0 0;
+        `;
+        
+        // Buckfast label (like the iconic yellow label)
+        const buckfastLabel = document.createElement('div');
+        buckfastLabel.textContent = 'BUCKFAST';
+        buckfastLabel.style.cssText = `
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-90deg);
+            background: #FFD700;
+            color: #8B0000;
+            padding: 8px 15px;
+            font-family: serif;
+            font-weight: bold;
+            font-size: 14px;
+            border: 2px solid #8B0000;
+            letter-spacing: 2px;
+            z-index: 1;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        `;
+        
+        // Tonic wine fill
         const thermometerFill = document.createElement('div');
         const maxScore = 3000;
         const fillPercentage = Math.min((finalScore / maxScore) * 100, 100);
@@ -289,50 +348,86 @@ export class Game {
             left: 0;
             width: 100%;
             height: 0%;
-            background: linear-gradient(to top, ${nedLevel.color}, ${nedLevel.color}80);
-            border-radius: 40px;
+            background: linear-gradient(to top, #8B0000, #DC143C, #8B0000);
             transition: height 2s ease-out;
-            box-shadow: 0 0 20px ${nedLevel.color};
+            box-shadow: 0 0 20px rgba(220, 20, 60, 0.6);
         `;
         
-        // Level markers
+        // Level markers with names
         const markers = [
-            { name: 'BURBERRY N TONIC', score: 2500, pos: 83.3 },
-            { name: 'ALL SEASON MERAPEAK', score: 1500, pos: 50 },
-            { name: 'CHECK MA NEW LACOSTE TRACKIE', score: 750, pos: 25 },
-            { name: 'BASIC BAM', score: 250, pos: 8.3 }
+            { name: 'BASIC BAM', score: 250, pos: 8.3, color: '#90EE90' },
+            { name: 'CHECK MA NEW LACOSTE TRACKIE', score: 750, pos: 25, color: '#4169E1' },
+            { name: 'ALL SEASON MERAPEAK', score: 1500, pos: 50, color: '#FF8C00' },
+            { name: 'BURBERRY CAP N BOTTLE A TONIC', score: 2500, pos: 83.3, color: '#FFD700' },
         ];
         
-        markers.forEach(marker => {
+        markers.forEach((marker, index) => {
+            // Marker line
             const markerLine = document.createElement('div');
             markerLine.style.cssText = `
                 position: absolute;
-                right: -10px;
+                left: -15px;
                 bottom: ${marker.pos}%;
-                width: 20px;
-                height: 2px;
+                width: 25px;
+                height: 3px;
                 background: white;
                 transform: translateY(50%);
+                z-index: 2;
             `;
             
-            const markerLabel = document.createElement('div');
-            markerLabel.textContent = marker.score.toLocaleString();
-            markerLabel.style.cssText = `
+            // Score label (left side)
+            const markerScore = document.createElement('div');
+            markerScore.textContent = marker.score.toLocaleString();
+            markerScore.style.cssText = `
                 position: absolute;
-                right: -80px;
+                left: -80px;
                 bottom: ${marker.pos}%;
                 transform: translateY(50%);
                 color: white;
-                font-size: 14px;
+                font-size: 16px;
                 font-family: monospace;
+                font-weight: bold;
                 white-space: nowrap;
+                text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
             `;
             
             thermometerContainer.appendChild(markerLine);
-            thermometerContainer.appendChild(markerLabel);
+            thermometerContainer.appendChild(markerScore);
         });
         
+        // Level names on the right
+        const levelLabelsContainer = document.createElement('div');
+        levelLabelsContainer.style.cssText = `
+            display: flex;
+            flex-direction: column-reverse;
+            justify-content: space-between;
+            height: 450px;
+            margin-left: 20px;
+        `;
+        
+        markers.forEach(marker => {
+            const levelLabel = document.createElement('div');
+            levelLabel.textContent = marker.name;
+            levelLabel.style.cssText = `
+                color: ${marker.color};
+                font-size: 16px;
+                font-family: monospace;
+                font-weight: bold;
+                white-space: nowrap;
+                text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+                padding: 5px 0;
+                text-align: left;
+            `;
+            levelLabelsContainer.appendChild(levelLabel);
+        });
+        
+        thermometerContainer.appendChild(bottleNeck);
+        thermometerContainer.appendChild(bottleCap);
+        thermometerContainer.appendChild(buckfastLabel);
         thermometerContainer.appendChild(thermometerFill);
+        
+        bottleWrapper.appendChild(thermometerContainer);
+        bottleWrapper.appendChild(levelLabelsContainer);
         
         // Ned level text
         const nedLevelText = document.createElement('div');
@@ -377,7 +472,7 @@ export class Game {
         
         overlay.appendChild(gameOverText);
         overlay.appendChild(scoreText);
-        overlay.appendChild(thermometerContainer);
+        overlay.appendChild(bottleWrapper);
         overlay.appendChild(nedLevelText);
         overlay.appendChild(restartButton);
         document.body.appendChild(overlay);
