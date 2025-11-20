@@ -70,6 +70,27 @@
             display: block;
             margin-bottom: 5px;
         }
+        #timer {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 36px;
+            font-weight: bold;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px 30px;
+            border-radius: 8px;
+        }
+        #timer .label {
+            font-size: 14px;
+            color: #aaccff;
+            display: block;
+            margin-bottom: 5px;
+            text-align: center;
+        }
         #stats-panel {
             position: absolute;
             bottom: 20px;
@@ -118,6 +139,11 @@
     <div id="score">
         <span class="label">DRIFT SCORE</span>
         <span id="score-value">0</span>
+    </div>
+
+    <div id="timer">
+        <span class="label">TIME</span>
+        <span id="timer-value">30s</span>
     </div>
 
     <div id="stats-panel">

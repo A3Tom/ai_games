@@ -21,7 +21,12 @@ export class Game {
         this.trailParticles = null;
         this.speedometerElement = null;
         this.scoreElement = null;
+        this.angleElement = null;
+        this.timerElement = null;
         this.score = 0;
+        this.timeRemaining = 30;
+        this.gameStarted = false;
+        this.gameOver = false;
         
         this._init();
     }
@@ -70,6 +75,7 @@ export class Game {
         this.speedometerElement = document.getElementById('speedometer');
         this.scoreElement = document.getElementById('score-value');
         this.angleElement = document.getElementById('angle-value');
+        this.timerElement = document.getElementById('timer-value');
     }
     
     _setupEventListeners() {
@@ -94,7 +100,28 @@ export class Game {
     }
     
     _update() {
+        // Don't update if game is over
+        if (this.gameOver) {
+            return;
+        }
+        
         const inputs = this.inputManager.getInputs();
+        
+        // Start timer when car first moves
+        const carSpeed = this.car.getSpeed();
+        if (!this.gameStarted && carSpeed > 0.01) {
+            this.gameStarted = true;
+        }
+        
+        // Update timer if game has started
+        if (this.gameStarted) {
+            this.timeRemaining -= 1/60; // Assuming 60 FPS
+            if (this.timeRemaining <= 0) {
+                this.timeRemaining = 0;
+                this.gameOver = true;
+                this._showGameOver();
+            }
+        }
         
         // Update car physics
         this.car.update(inputs);
@@ -121,6 +148,7 @@ export class Game {
         // Update UI
         this._updateSpeedometer();
         this._updateDriftAngle();
+        this._updateTimer();
     }
     
     _updateCamera() {
@@ -173,6 +201,86 @@ export class Game {
         const angleDelta = this.car.getAngleDelta();
         const degrees = Math.round(angleDelta * (180 / Math.PI)); // Convert radians to degrees
         this.angleElement.innerText = `${degrees}°`;
+    }
+    
+    _updateTimer() {
+        const seconds = Math.ceil(this.timeRemaining);
+        this.timerElement.innerText = `${seconds}s`;
+        
+        // Change color when time is running low
+        if (seconds <= 10) {
+            this.timerElement.style.color = '#ff4444';
+        } else {
+            this.timerElement.style.color = 'white';
+        }
+    }
+    
+    _showGameOver() {
+        // Create game over overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'game-over-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        `;
+        
+        const gameOverText = document.createElement('h1');
+        gameOverText.textContent = 'TIME\'S UP!';
+        gameOverText.style.cssText = `
+            color: #ff4444;
+            font-size: 72px;
+            font-family: monospace;
+            margin-bottom: 30px;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.5);
+        `;
+        
+        const finalScore = document.createElement('div');
+        finalScore.textContent = `Final Score: ${Math.floor(this.score).toLocaleString()}`;
+        finalScore.style.cssText = `
+            color: white;
+            font-size: 48px;
+            font-family: monospace;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+        `;
+        
+        const restartButton = document.createElement('button');
+        restartButton.textContent = 'RESTART';
+        restartButton.style.cssText = `
+            background: #d92525;
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            font-size: 24px;
+            font-family: monospace;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
+        `;
+        restartButton.onmouseover = () => {
+            restartButton.style.background = '#ff3333';
+        };
+        restartButton.onmouseout = () => {
+            restartButton.style.background = '#d92525';
+        };
+        restartButton.onclick = () => {
+            window.location.reload();
+        };
+        
+        overlay.appendChild(gameOverText);
+        overlay.appendChild(finalScore);
+        overlay.appendChild(restartButton);
+        document.body.appendChild(overlay);
     }
     
     _render() {
