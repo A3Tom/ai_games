@@ -61,6 +61,25 @@
             text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
             font-family: monospace;
         }
+        #score {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        #score .label {
+            font-size: 14px;
+            color: #aaccff;
+            display: block;
+            margin-bottom: 5px;
+        }
     </style>
 </head>
 <body>
@@ -70,6 +89,12 @@
         <p>Use <span class="key">Arrow Keys</span> or <span class="key">WASD</span> to drive.</p>
         <p>Hold <span class="key">Shift</span> for boost.</p>
         <p>Press <span class="key">Space</span> to drift harder!</p>
+        <p style="margin-top: 10px; color: #ffdd44;">Drift above 45 km/h to score points!</p>
+    </div>
+
+    <div id="score">
+        <span class="label">DRIFT SCORE</span>
+        <span id="score-value">0</span>
     </div>
 
     <div id="speedometer">0 km/h</div>

@@ -16,6 +16,8 @@ export class Car {
             vx: 0,
             vz: 0,
             angle: 0,
+            previousAngle: 0,
+            angleDelta: 0,
             speed: 0
         };
         
@@ -114,6 +116,9 @@ export class Car {
     }
     
     _updatePhysics(inputs) {
+        // Store previous angle for drift detection
+        this.state.previousAngle = this.state.angle;
+        
         // 1. Handle acceleration
         const currentMaxSpeed = inputs.boost ? CONFIG.boostSpeed : CONFIG.maxSpeed;
         const currentAcceleration = inputs.drift ? CONFIG.driftModeAcceleration : CONFIG.acceleration;
@@ -172,6 +177,9 @@ export class Car {
         // 7. Update position
         this.state.x += this.state.vx;
         this.state.z += this.state.vz;
+        
+        // 8. Calculate angle delta (how much we're turning)
+        this.state.angleDelta = Math.abs(this.state.angle - this.state.previousAngle);
     }
     
     _applyDrift(inputs) {
@@ -238,6 +246,10 @@ export class Car {
     
     getSpeed() {
         return this.state.speed;
+    }
+    
+    getAngleDelta() {
+        return this.state.angleDelta;
     }
     
     getVelocity() {

@@ -20,6 +20,8 @@ export class Game {
         this.snowParticles = null;
         this.trailParticles = null;
         this.speedometerElement = null;
+        this.scoreElement = null;
+        this.score = 0;
         
         this._init();
     }
@@ -64,8 +66,9 @@ export class Game {
         this.snowParticles = new SnowParticles(this.scene);
         this.trailParticles = new TrailParticles(this.scene);
         
-        // Get speedometer UI element
+        // Get UI elements
         this.speedometerElement = document.getElementById('speedometer');
+        this.scoreElement = document.getElementById('score-value');
     }
     
     _setupEventListeners() {
@@ -111,6 +114,9 @@ export class Game {
         };
         this.trailParticles.update(carState);
         
+        // Update score (award points when drifting above minimum speed)
+        this._updateScore(inputs.drift);
+        
         // Update UI
         this._updateSpeedometer();
     }
@@ -137,6 +143,20 @@ export class Game {
         const speed = this.car.getSpeed();
         const kmh = Math.round(speed * CONFIG.speedMultiplier);
         this.speedometerElement.innerText = `${kmh} km/h`;
+    }
+    
+    _updateScore(isDrifting) {
+        const speed = this.car.getSpeed();
+        const kmh = Math.round(speed * CONFIG.speedMultiplier);
+        const angleDelta = this.car.getAngleDelta();
+        
+        // Award points when drifting above minimum speed AND turning enough
+        if (isDrifting && 
+            kmh >= CONFIG.driftScoreMinSpeed && 
+            angleDelta >= CONFIG.driftScoreMinAngle) {
+            this.score += CONFIG.driftScorePerTick;
+            this.scoreElement.innerText = this.score.toLocaleString();
+        }
     }
     
     _render() {

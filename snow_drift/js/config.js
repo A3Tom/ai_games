@@ -62,5 +62,8 @@ export const CONFIG = {
     trailParticleOpacity: 0.9,    // More opaque
     
     // Gameplay
-    speedMultiplier: 50       // Convert internal speed to km/h for display
+    speedMultiplier: 50,          // Convert internal speed to km/h for display
+    driftScoreMinSpeed: 45,       // Minimum km/h speed to earn drift points
+    driftScoreMinAngle: 0.03,     // Minimum turning angle (radians) to count as drifting
+    driftScorePerTick: 1          // Points awarded per frame while drifting above min speed
 };
