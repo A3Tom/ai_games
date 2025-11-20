@@ -156,7 +156,7 @@ export class Game {
         if (isDrifting && 
             kmh >= CONFIG.driftScoreMinSpeed && 
             angleDelta >= CONFIG.driftScoreMinAngle) {
-            
+
             // Calculate multipliers
             const speedBonus = ((kmh - CONFIG.driftScoreMinSpeed) / 10) * CONFIG.driftScoreSpeedBonus;
             const angleBonus = angleDelta * CONFIG.driftScoreAngleBonus;

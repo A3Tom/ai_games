@@ -23,10 +23,10 @@ export const CONFIG = {
     acceleration: 0.03,
     driftModeAcceleration: 0.02,  // Reduced acceleration when drifting
     friction: 0.98,          // General air resistance
-    turnSpeed: 0.04,
-    driftFactor: 0.54,       // How much velocity aligns with heading per frame (Lower = More Drift/Ice)
+    turnSpeed: 0.02,
+    driftFactor: 0.84,       // How much velocity aligns with heading per frame (Lower = More Drift/Ice)
     driftModeFactor: 0.65,   // Drift factor when drift mode is active (even more sliding)
-    driftSpeedFactor: 0.3,   // How much speed affects drift (lower = more speed-based drift)
+    driftSpeedFactor: 0.13,   // How much speed affects drift (lower = more speed-based drift)
     gripThreshold: 0.1,      // Speed needed to steer effectively
     bounceCoefficient: 0.5,  // How much velocity is retained after boundary collision
     
@@ -64,7 +64,7 @@ export const CONFIG = {
     
     // Gameplay
     speedMultiplier: 50,          // Convert internal speed to km/h for display
-    driftScoreMinSpeed: 52,       // Minimum km/h speed to earn drift points
+    driftScoreMinSpeed: 23,       // Minimum km/h speed to earn drift points
     driftScoreMinAngle: 0.03,     // Minimum turning angle (radians) to count as drifting
     driftScorePerTick: 1,         // Base points awarded per frame while drifting
     driftScoreSpeedBonus: 0.5,    // Bonus multiplier per 10 km/h above minimum

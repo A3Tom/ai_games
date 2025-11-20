@@ -191,9 +191,13 @@ export class Car {
         // 4. Apply drift physics (ice effect)
         this._applyDrift(inputs);
 
-        // 5. Apply friction
-        this.state.vx *= CONFIG.friction;
-        this.state.vz *= CONFIG.friction;
+        // 5. Apply friction with drift penalty
+        // Higher drift angle = more speed loss
+        const driftAnglePenalty = this.state.steerAccumulator * 0.008; // 0.8% per accumulator point
+        const effectiveFriction = CONFIG.friction - driftAnglePenalty;
+        
+        this.state.vx *= effectiveFriction;
+        this.state.vz *= effectiveFriction;
 
         // 6. Cap speed
         if (this.state.speed > currentMaxSpeed) {
