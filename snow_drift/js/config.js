@@ -76,5 +76,10 @@ export const CONFIG = {
     pickupRespawnTime: 5,         // Seconds before a pickup respawns after collection
     pickupRotationSpeed: 0.01,    // Rotation speed for visual effect
     pickupBobSpeed: 0.01,         // Speed of up/down bobbing animation
-    pickupBobAmount: 0.2          // Amount of vertical movement in bob
+    pickupBobAmount: 0.2,         // Amount of vertical movement in bob
+    
+    // Police Hat Pickups
+    policeHatCount: 8,            // Number of police hats on the map
+    policeHatPenalty: 300,        // Points deducted per police hat
+    policeHatRespawnTime: 7       // Seconds before a police hat respawns
 };

@@ -149,10 +149,21 @@ export class Game {
         this.pickupManager.update(carPosition);
         
         // Check for pickup collisions
-        const collectedPickups = this.pickupManager.checkCollisions(carPosition);
-        if (collectedPickups.length > 0) {
-            collectedPickups.forEach(() => {
+        const collisions = this.pickupManager.checkCollisions(carPosition);
+        
+        // Handle Buckfast bottle collections (positive points)
+        if (collisions.bottles.length > 0) {
+            collisions.bottles.forEach(() => {
                 this.score += CONFIG.pickupScoreValue;
+                this._showScorePopup(`+${CONFIG.pickupScoreValue}`, carPosition, '#FFD700');
+            });
+        }
+        
+        // Handle police hat collections (negative points)
+        if (collisions.hats.length > 0) {
+            collisions.hats.forEach(() => {
+                this.score = Math.max(0, this.score - CONFIG.policeHatPenalty);
+                this._showScorePopup(`-${CONFIG.policeHatPenalty}`, carPosition, '#FF0000');
             });
         }
         
@@ -215,6 +226,64 @@ export class Game {
             this.score += points;
             this.scoreElement.innerText = Math.floor(this.score).toLocaleString();
         }
+    }
+    
+    _showScorePopup(text, position, color) {
+        // Create a floating score popup
+        const popup = document.createElement('div');
+        popup.textContent = text;
+        popup.style.cssText = `
+            position: fixed;
+            color: ${color};
+            font-size: 48px;
+            font-weight: bold;
+            font-family: monospace;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.8), 0 0 20px ${color};
+            pointer-events: none;
+            z-index: 999;
+            animation: scorePopup 1.5s ease-out forwards;
+        `;
+        
+        // Add CSS animation if not already added
+        if (!document.getElementById('score-popup-style')) {
+            const style = document.createElement('style');
+            style.id = 'score-popup-style';
+            style.textContent = `
+                @keyframes scorePopup {
+                    0% {
+                        transform: translateY(0) scale(1);
+                        opacity: 1;
+                    }
+                    50% {
+                        transform: translateY(-50px) scale(1.2);
+                        opacity: 1;
+                    }
+                    100% {
+                        transform: translateY(-100px) scale(0.8);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Convert 3D position to screen position
+        const vector = new THREE.Vector3(position.x, 2, position.z);
+        vector.project(this.camera);
+        
+        const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+        const y = (-vector.y * 0.5 + 0.5) * window.innerHeight;
+        
+        popup.style.left = `${x}px`;
+        popup.style.top = `${y}px`;
+        popup.style.transform = 'translate(-50%, -50%)';
+        
+        document.body.appendChild(popup);
+        
+        // Remove after animation completes
+        setTimeout(() => {
+            popup.remove();
+        }, 1500);
     }
     
     _updateDriftAngle() {
