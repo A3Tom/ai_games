@@ -39,58 +39,86 @@ export class PickupManager {
     _createBuckfastBottle() {
         const bottle = new THREE.Group();
         
-        // Bottle body (main cylinder)
-        const bodyGeometry = new THREE.CylinderGeometry(0.3, 0.3, 2, 8);
+        // Bottle body (wider, flatter shape like the real bottle)
+        const bodyGeometry = new THREE.CylinderGeometry(0.45, 0.45, 2.2, 12);
         const bodyMaterial = new THREE.MeshStandardMaterial({
-            color: 0x2d1800, // Dark brown glass
+            color: 0x1a0d00, // Very dark brown/black glass
             transparent: true,
-            opacity: 0.8,
-            roughness: 0.3,
+            opacity: 0.85,
+            roughness: 0.2,
             metalness: 0.1
         });
         const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-        body.position.y = 1;
+        body.position.y = 1.1;
         bottle.add(body);
         
+        // Bottle shoulder (tapered section)
+        const shoulderGeometry = new THREE.CylinderGeometry(0.25, 0.45, 0.4, 12);
+        const shoulder = new THREE.Mesh(shoulderGeometry, bodyMaterial);
+        shoulder.position.y = 2.4;
+        bottle.add(shoulder);
+        
         // Bottle neck
-        const neckGeometry = new THREE.CylinderGeometry(0.15, 0.3, 0.6, 8);
+        const neckGeometry = new THREE.CylinderGeometry(0.25, 0.25, 0.6, 12);
         const neck = new THREE.Mesh(neckGeometry, bodyMaterial);
-        neck.position.y = 2.3;
+        neck.position.y = 2.9;
         bottle.add(neck);
         
-        // Bottle cap
-        const capGeometry = new THREE.CylinderGeometry(0.18, 0.18, 0.2, 8);
+        // Bottle cap (gold/yellow screw cap)
+        const capGeometry = new THREE.CylinderGeometry(0.28, 0.28, 0.25, 12);
         const capMaterial = new THREE.MeshStandardMaterial({
-            color: 0xFFD700, // Gold
-            roughness: 0.4,
-            metalness: 0.6
+            color: 0xDAA520, // Goldenrod
+            roughness: 0.5,
+            metalness: 0.7
         });
         const cap = new THREE.Mesh(capGeometry, capMaterial);
-        cap.position.y = 2.7;
+        cap.position.y = 3.35;
         bottle.add(cap);
         
-        // Yellow label (iconic Buckfast label)
-        const labelGeometry = new THREE.CylinderGeometry(0.32, 0.32, 0.8, 8);
+        // Main yellow label (large, covering most of the bottle like in the photo)
+        const labelGeometry = new THREE.CylinderGeometry(0.47, 0.47, 1.8, 12);
         const labelMaterial = new THREE.MeshStandardMaterial({
-            color: 0xFFD700, // Yellow/gold
-            roughness: 0.7
+            color: 0xF4C430, // Saffron yellow (Buckfast signature color)
+            roughness: 0.8,
+            emissive: 0xF4C430,
+            emissiveIntensity: 0.1
         });
         const label = new THREE.Mesh(labelGeometry, labelMaterial);
-        label.position.y = 1.2;
+        label.position.y = 1.3;
         bottle.add(label);
         
-        // Red stripe on label
-        const stripeGeometry = new THREE.CylinderGeometry(0.33, 0.33, 0.15, 8);
-        const stripeMaterial = new THREE.MeshStandardMaterial({
-            color: 0x8B0000, // Dark red
+        // Red "Buckfast" text area (horizontal band)
+        const redBandGeometry = new THREE.CylinderGeometry(0.48, 0.48, 0.3, 12);
+        const redBandMaterial = new THREE.MeshStandardMaterial({
+            color: 0xC41E3A, // Cardinal red
             roughness: 0.7
         });
-        const stripe = new THREE.Mesh(stripeGeometry, stripeMaterial);
-        stripe.position.y = 1.2;
-        bottle.add(stripe);
+        const redBand = new THREE.Mesh(redBandGeometry, redBandMaterial);
+        redBand.position.y = 1.6;
+        bottle.add(redBand);
         
-        // Glow effect (point light)
-        const glowLight = new THREE.PointLight(0xFFD700, 1, 8);
+        // Dark band at top of label
+        const darkBandGeometry = new THREE.CylinderGeometry(0.48, 0.48, 0.2, 12);
+        const darkBandMaterial = new THREE.MeshStandardMaterial({
+            color: 0x8B4513, // Saddle brown
+            roughness: 0.7
+        });
+        const darkBand = new THREE.Mesh(darkBandGeometry, darkBandMaterial);
+        darkBand.position.y = 2.1;
+        bottle.add(darkBand);
+        
+        // Bottom label detail (grapes/monastery image area)
+        const bottomDetailGeometry = new THREE.CylinderGeometry(0.48, 0.48, 0.4, 12);
+        const bottomDetailMaterial = new THREE.MeshStandardMaterial({
+            color: 0xE6B800, // Darker yellow for contrast
+            roughness: 0.8
+        });
+        const bottomDetail = new THREE.Mesh(bottomDetailGeometry, bottomDetailMaterial);
+        bottomDetail.position.y = 0.7;
+        bottle.add(bottomDetail);
+        
+        // Glow effect (subtle golden glow)
+        const glowLight = new THREE.PointLight(0xF4C430, 0.8, 10);
         glowLight.position.y = 1.5;
         bottle.add(glowLight);
         
