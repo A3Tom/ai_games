@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snowy Drift</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #aaccff; /* Foggy sky color */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+        #ui-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 8px;
+            pointer-events: none;
+            text-shadow: 1px 1px 2px black;
+        }
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+        p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .key {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-family: monospace;
+        }
+        #speedometer {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-container">
+        <h1>SNOW DRIFT</h1>
+        <p>Use <span class="key">Arrow Keys</span> or <span class="key">WASD</span> to drive.</p>
+        <p>Hold <span class="key">Shift</span> for boost.</p>
+        <p>Slide on the ice to drift!</p>
+    </div>
+
+    <div id="speedometer">0 km/h</div>
+
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        /**
+         * SNOWY DRIFT GAME
+         * A custom arcade physics demo using Three.js
+         */
+
+        // --- Configuration ---
+        const CONFIG = {
+            groundSize: 400,
+            treeCount: 60,
+            snowCount: 2000,
+            cameraHeight: 15,
+            cameraDistance: 25,
+            maxSpeed: 1.8,
+            boostSpeed: 2.5,
+            acceleration: 0.03,
+            friction: 0.98,      // General air resistance
+            turnSpeed: 0.04,
+            driftFactor: 0.94,   // How much velocity aligns with heading per frame (Lower = More Drift/Ice)
+            gripThreshold: 0.1   // Speed needed to steer effectively
+        };
+
+        // --- State ---
+        const inputs = { up: false, down: false, left: false, right: false, boost: false };
+        const carState = {
+            x: 0, z: 0,
+            vx: 0, vz: 0,
+            angle: 0,
+            speed: 0
+        };
+
+        // --- Scene Setup ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xaaccff); // Winter sky
+        scene.fog = new THREE.FogExp2(0xaaccff, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffee, 0.8);
+        dirLight.position.set(100, 100, 50);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 500;
+        dirLight.shadow.camera.left = -100;
+        dirLight.shadow.camera.right = 100;
+        dirLight.shadow.camera.top = 100;
+        dirLight.shadow.camera.bottom = -100;
+        scene.add(dirLight);
+
+        // --- Environment ---
+        
+        // Ground
+        const groundGeo = new THREE.PlaneGeometry(CONFIG.groundSize, CONFIG.groundSize);
+        const groundMat = new THREE.MeshStandardMaterial({ 
+            color: 0xffffff, 
+            roughness: 1,
+            metalness: 0 
+        });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // Ice/Snow Grid (Visual Aid for speed)
+        const gridHelper = new THREE.GridHelper(CONFIG.groundSize, 40, 0xddeeff, 0xddeeff);
+        gridHelper.position.y = 0.05;
+        gridHelper.material.opacity = 0.3;
+        gridHelper.material.transparent = true;
+        scene.add(gridHelper);
+
+        // Trees
+        const treeGeo = new THREE.ConeGeometry(2, 8, 8);
+        const treeMat = new THREE.MeshStandardMaterial({ color: 0x2d4c1e, roughness: 0.8 });
+        const trunkGeo = new THREE.CylinderGeometry(0.5, 0.5, 2, 8);
+        const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3c31 });
+
+        function createTree(x, z) {
+            const group = new THREE.Group();
+            
+            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+            trunk.position.y = 1;
+            trunk.castShadow = true;
+            group.add(trunk);
+
+            const leaves = new THREE.Mesh(treeGeo, treeMat);
+            leaves.position.y = 5;
+            leaves.castShadow = true;
+            group.add(leaves);
+
+            // Snow on tree
+            const snowCap = new THREE.Mesh(new THREE.ConeGeometry(1.5, 3, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+            snowCap.position.y = 6.5;
+            group.add(snowCap);
+
+            group.position.set(x, 0, z);
+            // Random scale/rotation for variety
+            const s = 0.8 + Math.random() * 0.6;
+            group.scale.set(s, s, s);
+            scene.add(group);
+        }
+
+        // Generate random trees, keeping center clear
+        for (let i = 0; i < CONFIG.treeCount; i++) {
+            let x = (Math.random() - 0.5) * CONFIG.groundSize * 0.9;
+            let z = (Math.random() - 0.5) * CONFIG.groundSize * 0.9;
+            
+            // Keep center area clear for driving
+            if (Math.abs(x) < 30 && Math.abs(z) < 30) continue;
+
+            createTree(x, z);
+        }
+
+        // Snow Particles
+        const snowGeo = new THREE.BufferGeometry();
+        const snowPos = [];
+        for(let i=0; i<CONFIG.snowCount; i++) {
+            snowPos.push(
+                (Math.random() - 0.5) * CONFIG.groundSize,
+                Math.random() * 50,
+                (Math.random() - 0.5) * CONFIG.groundSize
+            );
+        }
+        snowGeo.setAttribute('position', new THREE.Float32BufferAttribute(snowPos, 3));
+        const snowMat = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 0.4,
+            transparent: true,
+            opacity: 0.8
+        });
+        const snowSystem = new THREE.Points(snowGeo, snowMat);
+        scene.add(snowSystem);
+
+        // --- Car Model ---
+        const carGroup = new THREE.Group();
+        scene.add(carGroup);
+
+        // Chassis
+        const chassisGeo = new THREE.BoxGeometry(2, 1, 4.5);
+        const chassisMat = new THREE.MeshStandardMaterial({ color: 0xd92525, roughness: 0.4, metalness: 0.3 }); // Red car
+        const chassis = new THREE.Mesh(chassisGeo, chassisMat);
+        chassis.position.y = 0.7;
+        chassis.castShadow = true;
+        carGroup.add(chassis);
+
+        // Roof/Cabin
+        const cabinGeo = new THREE.BoxGeometry(1.8, 0.8, 2.5);
+        const cabinMat = new THREE.MeshStandardMaterial({ color: 0x333333 }); // Dark windows
+        const cabin = new THREE.Mesh(cabinGeo, cabinMat);
+        cabin.position.y = 1.4;
+        cabin.castShadow = true;
+        carGroup.add(cabin);
+
+        // Wheels
+        const wheelGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.4, 16);
+        const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+        
+        function addWheel(x, z) {
+            const w = new THREE.Mesh(wheelGeo, wheelMat);
+            w.rotation.z = Math.PI / 2;
+            w.position.set(x, 0.4, z);
+            w.castShadow = true;
+            carGroup.add(w);
+            return w;
+        }
+        // Front wheels (we'll animate these turning)
+        const flWheel = addWheel(-1.1, 1.5);
+        const frWheel = addWheel(1.1, 1.5);
+        // Back wheels
+        addWheel(-1.1, -1.5);
+        addWheel(1.1, -1.5);
+
+        // Headlights
+        const hlLeft = new THREE.SpotLight(0xffffee, 5, 60, 0.5, 0.5, 1);
+        hlLeft.position.set(-0.6, 1, 2);
+        hlLeft.target.position.set(-0.6, 0, 10);
+        carGroup.add(hlLeft);
+        carGroup.add(hlLeft.target);
+
+        const hlRight = new THREE.SpotLight(0xffffee, 5, 60, 0.5, 0.5, 1);
+        hlRight.position.set(0.6, 1, 2);
+        hlRight.target.position.set(0.6, 0, 10);
+        carGroup.add(hlRight);
+        carGroup.add(hlRight.target);
+
+        // Tail particles (Snow spray)
+        const trailGeo = new THREE.BufferGeometry();
+        const trailPositions = new Float32Array(300 * 3); // 100 particles * 3 coords
+        trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+        const trailMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.3, transparent: true, opacity: 0.6 });
+        const trailSystem = new THREE.Points(trailGeo, trailMat);
+        scene.add(trailSystem);
+        
+        // Store trail data
+        const particles = [];
+        for(let i=0; i<300; i++) {
+            particles.push({
+                x: 0, y: -100, z: 0, // Hidden initially
+                life: 0,
+                vx: 0, vy: 0, vz: 0
+            });
+        }
+
+        // --- Input Handling ---
+        window.addEventListener('keydown', (e) => {
+            switch(e.key.toLowerCase()) {
+                case 'w': case 'arrowup': inputs.up = true; break;
+                case 's': case 'arrowdown': inputs.down = true; break;
+                case 'a': case 'arrowleft': inputs.left = true; break;
+                case 'd': case 'arrowright': inputs.right = true; break;
+                case 'shift': inputs.boost = true; break;
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            switch(e.key.toLowerCase()) {
+                case 'w': case 'arrowup': inputs.up = false; break;
+                case 's': case 'arrowdown': inputs.down = false; break;
+                case 'a': case 'arrowleft': inputs.left = false; break;
+                case 'd': case 'arrowright': inputs.right = false; break;
+                case 'shift': inputs.boost = false; break;
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- Physics & Game Loop ---
+
+        function updatePhysics() {
+            // 1. Handle Input & Acceleration
+            const currentMaxSpeed = inputs.boost ? CONFIG.boostSpeed : CONFIG.maxSpeed;
+            
+            if (inputs.up) {
+                carState.vx += Math.sin(carState.angle) * CONFIG.acceleration;
+                carState.vz += Math.cos(carState.angle) * CONFIG.acceleration;
+            }
+            if (inputs.down) {
+                carState.vx -= Math.sin(carState.angle) * CONFIG.acceleration;
+                carState.vz -= Math.cos(carState.angle) * CONFIG.acceleration;
+            }
+
+            // Calculate speed (scalar)
+            carState.speed = Math.sqrt(carState.vx*carState.vx + carState.vz*carState.vz);
+
+            // 2. Steering
+            // Only steer if moving (simple approximation) or if drifting with high momentum
+            if (carState.speed > CONFIG.gripThreshold) {
+                let turn = CONFIG.turnSpeed;
+                // Reverse steering when going backwards logic is tricky in drift, 
+                // for arcade feel, just standard steering usually feels better
+                const direction = (carState.vx * Math.sin(carState.angle) + carState.vz * Math.cos(carState.angle)) > 0 ? 1 : -1;
+                
+                if (inputs.left) {
+                    carState.angle += turn * direction;
+                    // Visual wheel turn
+                    flWheel.rotation.y = 0.4;
+                    frWheel.rotation.y = 0.4;
+                } else if (inputs.right) {
+                    carState.angle -= turn * direction;
+                    flWheel.rotation.y = -0.4;
+                    frWheel.rotation.y = -0.4;
+                } else {
+                    flWheel.rotation.y = 0;
+                    frWheel.rotation.y = 0;
+                }
+            } else {
+                flWheel.rotation.y = inputs.left ? 0.4 : (inputs.right ? -0.4 : 0);
+                frWheel.rotation.y = inputs.left ? 0.4 : (inputs.right ? -0.4 : 0);
+            }
+
+            // 3. Drift Physics (The "Snow" Effect)
+            // Instead of forcing the car to move exactly where it faces, 
+            // we blend the current velocity vector towards the facing vector slightly.
+            // The "driftFactor" determines how much grip the tires have.
+            
+            // Current velocity magnitude
+            const vMag = Math.sqrt(carState.vx*carState.vx + carState.vz*carState.vz);
+            
+            if (vMag > 0.01) {
+                // Normalised velocity vector
+                const nx = carState.vx / vMag;
+                const nz = carState.vz / vMag;
+                
+                // Target vector (where the car is facing)
+                const tx = Math.sin(carState.angle);
+                const tz = Math.cos(carState.angle);
+
+                // Interpolate current direction towards target direction
+                // On ice/snow, we interpolate LESS (slower response to steering)
+                const blendedX = nx * CONFIG.driftFactor + tx * (1 - CONFIG.driftFactor);
+                const blendedZ = nz * CONFIG.driftFactor + tz * (1 - CONFIG.driftFactor);
+                
+                // Re-normalize
+                const blendedMag = Math.sqrt(blendedX*blendedX + blendedZ*blendedZ);
+                
+                // Apply back to velocity, maintaining momentum mostly
+                carState.vx = (blendedX / blendedMag) * vMag;
+                carState.vz = (blendedZ / blendedMag) * vMag;
+            }
+
+            // 4. Friction / Resistance
+            carState.vx *= CONFIG.friction;
+            carState.vz *= CONFIG.friction;
+
+            // Cap Speed
+            if (carState.speed > currentMaxSpeed) {
+                const ratio = currentMaxSpeed / carState.speed;
+                carState.vx *= ratio;
+                carState.vz *= ratio;
+            }
+
+            // 5. Position Update
+            carState.x += carState.vx;
+            carState.z += carState.vz;
+
+            // 6. Boundaries (Bounce)
+            const limit = CONFIG.groundSize / 2;
+            if (carState.x > limit || carState.x < -limit) {
+                carState.x = carState.x > limit ? limit : -limit;
+                carState.vx *= -0.5; // bounce
+            }
+            if (carState.z > limit || carState.z < -limit) {
+                carState.z = carState.z > limit ? limit : -limit;
+                carState.vz *= -0.5; // bounce
+            }
+
+            // 7. Visual Updates
+            carGroup.position.set(carState.x, 0, carState.z);
+            carGroup.rotation.y = carState.angle;
+
+            // Speedometer
+            document.getElementById('speedometer').innerText = Math.round(carState.speed * 50) + " km/h";
+        }
+
+        function updateCamera() {
+            // Smooth follow camera
+            // Target position: behind the car based on its rotation
+            // To make drifting look cool, the camera should lag a bit, focusing on the car's position more than its strict rotation
+            
+            const idealOffset = new THREE.Vector3(0, CONFIG.cameraHeight, -CONFIG.cameraDistance);
+            idealOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), carState.angle);
+            idealOffset.add(new THREE.Vector3(carState.x, 0, carState.z));
+
+            // Simple Lerp for smoothness
+            camera.position.lerp(idealOffset, 0.1);
+            camera.lookAt(carState.x, 0, carState.z);
+        }
+
+        function updateSnow() {
+            const positions = snowSystem.geometry.attributes.position.array;
+            for(let i = 1; i < positions.length; i += 3) {
+                positions[i] -= 0.2; // Fall down
+                if (positions[i] < 0) {
+                    positions[i] = 50; // Reset to top
+                }
+            }
+            snowSystem.geometry.attributes.position.needsUpdate = true;
+
+            // Move snow system with car so we always have snow around us (infinite snow trick)
+            // But we snap to grid to avoid jittering
+            snowSystem.position.x = carState.x;
+            snowSystem.position.z = carState.z;
+        }
+
+        let particleIdx = 0;
+        function updateTrails() {
+            const posAttribute = trailSystem.geometry.attributes.position;
+            
+            // Spawn new particles if moving and slipping (drifting)
+            // We calculate slip by comparing velocity vector to facing vector
+            const slip = Math.abs(
+                Math.atan2(carState.vx, carState.vz) - carState.angle
+            );
+            
+            // Normalize angle diff logic (handle PI wrap) is complex, 
+            // simple check: if speed > 0.5, emit particles
+            if (carState.speed > 0.5) {
+                // Emit 2 particles (one for each rear tire)
+                // Calculate rear tire positions world space
+                const cos = Math.cos(carState.angle);
+                const sin = Math.sin(carState.angle);
+                
+                // Rear Left (-1.1, -1.5 relative)
+                const rlx = carState.x + (-1.1 * cos - -1.5 * sin);
+                const rlz = carState.z + (-1.1 * sin + -1.5 * cos); // Rotate vector formula: x' = x cos - z sin... wait simple rotation:
+                // x' = x cos - z sin
+                // z' = x sin + z cos
+                // actually Threejs uses (x, y, z). Y is up.
+                // Car forward is +Z in my physics? No, usually +Z. 
+                // My physics: sin(angle) -> x, cos(angle) -> z.
+                
+                // Let's just use the car object matrix for perfect positioning
+                const matrix = carGroup.matrixWorld;
+                
+                // Spawn particle logic
+                for(let w = -1; w <= 1; w += 2) { // -1 left, 1 right
+                    const p = particles[particleIdx];
+                    
+                    // Roughly behind wheels
+                    const wx = w * 1.1;
+                    const wz = -1.5;
+                    
+                    // Manual rotation transform
+                    p.x = carState.x + (wx * Math.cos(carState.angle) + wz * Math.sin(carState.angle));
+                    p.z = carState.z + (-wx * Math.sin(carState.angle) + wz * Math.cos(carState.angle));
+                    p.y = 0.1;
+                    p.life = 1.0;
+                    
+                    particleIdx = (particleIdx + 1) % particles.length;
+                }
+            }
+
+            // Update all particles
+            for(let i=0; i<particles.length; i++) {
+                const p = particles[i];
+                if (p.life > 0) {
+                    p.life -= 0.02;
+                    p.y += 0.05; // Rise up slightly like snow dust
+                    
+                    posAttribute.setXYZ(i, p.x, p.y, p.z);
+                } else {
+                    posAttribute.setXYZ(i, 0, -100, 0); // Hide
+                }
+            }
+            posAttribute.needsUpdate = true;
+        }
+
+        // --- Main Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            updatePhysics();
+            updateCamera();
+            updateSnow();
+            updateTrails();
+            
+            renderer.render(scene, camera);
+        }
+
+        // Start
+        animate();
+
+    </script>
+</body>
+</html>
