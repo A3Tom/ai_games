@@ -25,7 +25,9 @@ export class Game {
         this.scoreElement = null;
         this.angleElement = null;
         this.timerElement = null;
+        this.highScoreElement = null;
         this.score = 0;
+        this.highScore = this._loadHighScore();
         this.timeRemaining = 30;
         this.gameStarted = false;
         this.gameOver = false;
@@ -79,6 +81,61 @@ export class Game {
         this.scoreElement = document.getElementById('score-value');
         this.angleElement = document.getElementById('angle-value');
         this.timerElement = document.getElementById('timer-value');
+        
+        // Setup high score display
+        this._setupHighScoreDisplay();
+    }
+    
+    _loadHighScore() {
+        const saved = localStorage.getItem('snowDriftHighScore');
+        return saved ? parseInt(saved, 10) : 0;
+    }
+    
+    _saveHighScore(score) {
+        localStorage.setItem('snowDriftHighScore', score.toString());
+    }
+    
+    _setupHighScoreDisplay() {
+        // Only show high score if one exists
+        if (this.highScore > 0) {
+            const highScoreContainer = document.createElement('div');
+            highScoreContainer.id = 'high-score';
+            highScoreContainer.style.cssText = `
+                position: absolute;
+                top: 120px;
+                right: 20px;
+                color: white;
+                font-size: 18px;
+                font-weight: bold;
+                text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+                font-family: monospace;
+                background: rgba(0, 0, 0, 0.5);
+                padding: 10px 15px;
+                border-radius: 8px;
+            `;
+            
+            const label = document.createElement('div');
+            label.textContent = 'HIGH SCORE';
+            label.style.cssText = `
+                font-size: 12px;
+                color: #FFD700;
+                margin-bottom: 5px;
+            `;
+            
+            const value = document.createElement('div');
+            value.id = 'high-score-value';
+            value.textContent = this.highScore.toLocaleString();
+            value.style.cssText = `
+                font-size: 24px;
+                color: #FFD700;
+            `;
+            
+            highScoreContainer.appendChild(label);
+            highScoreContainer.appendChild(value);
+            document.body.appendChild(highScoreContainer);
+            
+            this.highScoreElement = value;
+        }
     }
     
     _setupEventListeners() {
@@ -156,6 +213,7 @@ export class Game {
             collisions.bottles.forEach(() => {
                 this.score += CONFIG.pickupScoreValue;
                 this._showScorePopup(`+${CONFIG.pickupScoreValue}`, carPosition, '#FFD700');
+                this._updateHighScore();
             });
         }
         
@@ -225,6 +283,17 @@ export class Game {
             const points = CONFIG.driftScorePerTick * totalMultiplier;
             this.score += points;
             this.scoreElement.innerText = Math.floor(this.score).toLocaleString();
+            this._updateHighScore();
+        }
+    }
+    
+    _updateHighScore() {
+        const currentScore = Math.floor(this.score);
+        if (currentScore > this.highScore) {
+            this.highScore = currentScore;
+            if (this.highScoreElement) {
+                this.highScoreElement.textContent = this.highScore.toLocaleString();
+            }
         }
     }
     
@@ -307,6 +376,11 @@ export class Game {
     _showGameOver() {
         const finalScore = Math.floor(this.score);
         
+        // Save high score
+        if (finalScore > this._loadHighScore()) {
+            this._saveHighScore(finalScore);
+        }
+        
         // Determine Ned level
         const nedLevels = [
             { threshold: 2000, name: 'A god amungst the neds, burberry cap on n tonic in hand. Yeev made it.', color: '#FFD700' },
@@ -354,6 +428,37 @@ export class Game {
             margin-bottom: 40px;
             text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
         `;
+        
+        // Check if this is a new high score
+        const isNewHighScore = finalScore > this._loadHighScore();
+        let highScoreText = null;
+        
+        if (isNewHighScore) {
+            highScoreText = document.createElement('div');
+            highScoreText.textContent = '🏆 NEW HIGH SCORE! 🏆';
+            highScoreText.style.cssText = `
+                color: #FFD700;
+                font-size: 42px;
+                font-family: monospace;
+                font-weight: bold;
+                margin-bottom: 20px;
+                text-shadow: 3px 3px 0 rgba(0,0,0,0.5), 0 0 30px #FFD700;
+                animation: highScorePulse 1s infinite;
+            `;
+            
+            // Add pulsing animation
+            if (!document.getElementById('high-score-pulse-style')) {
+                const style = document.createElement('style');
+                style.id = 'high-score-pulse-style';
+                style.textContent = `
+                    @keyframes highScorePulse {
+                        0%, 100% { transform: scale(1); }
+                        50% { transform: scale(1.1); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
         
         // Buckfast bottle container (wrapper for label positioning)
         const bottleWrapper = document.createElement('div');
@@ -561,6 +666,9 @@ export class Game {
         
         overlay.appendChild(gameOverText);
         overlay.appendChild(scoreText);
+        if (highScoreText) {
+            overlay.appendChild(highScoreText);
+        }
         overlay.appendChild(bottleWrapper);
         overlay.appendChild(nedLevelText);
         overlay.appendChild(restartButton);
