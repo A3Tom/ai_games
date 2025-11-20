@@ -68,5 +68,13 @@ export const CONFIG = {
     driftScoreMinAngle: 0.03,     // Minimum turning angle (radians) to count as drifting
     driftScorePerTick: 1,         // Base points awarded per frame while drifting
     driftScoreSpeedBonus: 0.5,    // Bonus multiplier per 10 km/h above minimum
-    driftScoreAngleBonus: 20      // Bonus multiplier for drift angle (higher = more points for sharper turns)
+    driftScoreAngleBonus: 20,     // Bonus multiplier for drift angle (higher = more points for sharper turns)
+    
+    // Pickups
+    pickupCount: 8,               // Number of Buckfast bottles on the map
+    pickupScoreValue: 200,        // Points awarded per pickup
+    pickupRespawnTime: 5,         // Seconds before a pickup respawns after collection
+    pickupRotationSpeed: 0.02,    // Rotation speed for visual effect
+    pickupBobSpeed: 0.03,         // Speed of up/down bobbing animation
+    pickupBobAmount: 0.3          // Amount of vertical movement in bob
 };

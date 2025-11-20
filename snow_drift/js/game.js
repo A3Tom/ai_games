@@ -4,6 +4,7 @@ import { InputManager } from './input.js';
 import { Car } from './car.js';
 import { Environment } from './environment.js';
 import { SnowParticles, TrailParticles } from './particles.js';
+import { PickupManager } from './pickups.js';
 
 /**
  * Main Game Class
@@ -19,6 +20,7 @@ export class Game {
         this.environment = null;
         this.snowParticles = null;
         this.trailParticles = null;
+        this.pickupManager = null;
         this.speedometerElement = null;
         this.scoreElement = null;
         this.angleElement = null;
@@ -70,6 +72,7 @@ export class Game {
         this.car = new Car(this.scene);
         this.snowParticles = new SnowParticles(this.scene);
         this.trailParticles = new TrailParticles(this.scene);
+        this.pickupManager = new PickupManager(this.scene);
         
         // Get UI elements
         this.speedometerElement = document.getElementById('speedometer');
@@ -141,6 +144,17 @@ export class Game {
             isDrifting: inputs.drift
         };
         this.trailParticles.update(carState);
+        
+        // Update pickups
+        this.pickupManager.update(carPosition);
+        
+        // Check for pickup collisions
+        const collectedPickups = this.pickupManager.checkCollisions(carPosition);
+        if (collectedPickups.length > 0) {
+            collectedPickups.forEach(() => {
+                this.score += CONFIG.pickupScoreValue;
+            });
+        }
         
         // Update score (award points when drifting above minimum speed)
         this._updateScore(inputs.drift);
