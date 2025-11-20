@@ -202,7 +202,13 @@ export class Game {
             // Calculate multipliers
             const speedBonus = ((kmh - CONFIG.driftScoreMinSpeed) / 10) * CONFIG.driftScoreSpeedBonus;
             const angleBonus = angleDelta * CONFIG.driftScoreAngleBonus;
-            const totalMultiplier = 1 + speedBonus + angleBonus;
+            let totalMultiplier = 1 + speedBonus + angleBonus;
+            
+            const isDoingDonuts = kmh == 23 && angleDelta == 0.8;
+            // Reduce score significantly if doing donuts (stationary spinning)
+            if (isDoingDonuts) {
+                totalMultiplier *= 0.15; // Only 15% of normal score for donuts
+            }
             
             // Award points with multiplier
             const points = CONFIG.driftScorePerTick * totalMultiplier;
@@ -234,7 +240,7 @@ export class Game {
         
         // Determine Ned level
         const nedLevels = [
-            { threshold: 2500, name: 'A god amungst the neds, burberry cap on n tonic in hand. Yeev made it.', color: '#FFD700' },
+            { threshold: 2000, name: 'A god amungst the neds, burberry cap on n tonic in hand. Yeev made it.', color: '#FFD700' },
             { threshold: 1500, name: 'Approachin the top of the tonic totem pole, a classic merapeak is yours', color: '#FF8C00' },
             { threshold: 750, name: 'You\'ve earned a class new trackie top!', color: '#4169E1' },
             { threshold: 250, name: 'Yer just a basic wee bam, get sliding about the carparks', color: '#90EE90' },
@@ -354,7 +360,7 @@ export class Game {
         
         // Tonic wine fill
         const thermometerFill = document.createElement('div');
-        const maxScore = 3000;
+        const maxScore = 2000;
         const fillPercentage = Math.min((finalScore / maxScore) * 100, 100);
         thermometerFill.style.cssText = `
             position: absolute;
@@ -372,7 +378,7 @@ export class Game {
             { name: 'BASIC BAM', score: 250, pos: 8.3, color: '#90EE90' },
             { name: 'CHECK MA NEW LACOSTE TRACKIE', score: 750, pos: 25, color: '#4169E1' },
             { name: 'ALL SEASON MERAPEAK', score: 1500, pos: 50, color: '#FF8C00' },
-            { name: 'BURBERRY CAP N BOTTLE A TONIC', score: 2500, pos: 83.3, color: '#FFD700' },
+            { name: 'BURBERRY CAP N BOTTLE A TONIC', score: 2000, pos: 83.3, color: '#FFD700' },
         ];
         
         markers.forEach((marker, index) => {
