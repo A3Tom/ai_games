@@ -26,6 +26,7 @@ export const CONFIG = {
     turnSpeed: 0.04,
     driftFactor: 0.54,       // How much velocity aligns with heading per frame (Lower = More Drift/Ice)
     driftModeFactor: 0.65,   // Drift factor when drift mode is active (even more sliding)
+    driftSpeedFactor: 0.3,   // How much speed affects drift (lower = more speed-based drift)
     gripThreshold: 0.1,      // Speed needed to steer effectively
     bounceCoefficient: 0.5,  // How much velocity is retained after boundary collision
     

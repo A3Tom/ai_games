@@ -18,7 +18,8 @@ export class Car {
             angle: 0,
             previousAngle: 0,
             angleDelta: 0,
-            speed: 0
+            speed: 0,
+            steerAccumulator: 0  // Accumulated steering input
         };
         
         // 3D group containing all car parts
@@ -138,7 +139,12 @@ export class Car {
             this.state.vz * this.state.vz
         );
 
-        // 3. Steering
+        // 3. Steering with accumulation
+        // Build up turn angle based on holding steering keys
+        const maxSteerAccumulation = 3.0; // Maximum accumulated turn multiplier
+        const steerBuildRate = 0.05;      // How fast steering accumulates
+        const steerDecayRate = 0.15;      // How fast it decays when not turning
+        
         if (this.state.speed > CONFIG.gripThreshold) {
             const direction = (
                 this.state.vx * Math.sin(this.state.angle) + 
@@ -146,15 +152,37 @@ export class Car {
             ) > 0 ? 1 : -1;
             
             if (inputs.left) {
-                this.state.angle += CONFIG.turnSpeed * direction;
+                // Accumulate steering input
+                this.state.steerAccumulator = Math.min(
+                    this.state.steerAccumulator + steerBuildRate, 
+                    maxSteerAccumulation
+                );
+                const turnAmount = CONFIG.turnSpeed * direction * (1 + this.state.steerAccumulator);
+                this.state.angle += turnAmount;
                 this._setWheelAngle(0.4);
             } else if (inputs.right) {
-                this.state.angle -= CONFIG.turnSpeed * direction;
+                // Accumulate steering input
+                this.state.steerAccumulator = Math.min(
+                    this.state.steerAccumulator + steerBuildRate, 
+                    maxSteerAccumulation
+                );
+                const turnAmount = CONFIG.turnSpeed * direction * (1 + this.state.steerAccumulator);
+                this.state.angle -= turnAmount;
                 this._setWheelAngle(-0.4);
             } else {
+                // Decay steering accumulator when not turning
+                this.state.steerAccumulator = Math.max(
+                    this.state.steerAccumulator - steerDecayRate, 
+                    0
+                );
                 this._setWheelAngle(0);
             }
         } else {
+            // Decay at low speed
+            this.state.steerAccumulator = Math.max(
+                this.state.steerAccumulator - steerDecayRate, 
+                0
+            );
             this._setWheelAngle(
                 inputs.left ? 0.4 : (inputs.right ? -0.4 : 0)
             );
@@ -197,8 +225,16 @@ export class Car {
             const tx = Math.sin(this.state.angle);
             const tz = Math.cos(this.state.angle);
 
+            // Calculate speed-based drift factor (faster = more drift)
+            // Higher speed reduces grip, causing more sliding
+            const speedInfluence = Math.min(vMag / CONFIG.maxSpeed, 1.0); // Normalize to 0-1
+            const speedDriftReduction = speedInfluence * CONFIG.driftSpeedFactor;
+            
             // Use different drift factor when drift mode is active
-            const currentDriftFactor = inputs.drift ? CONFIG.driftModeFactor : CONFIG.driftFactor;
+            let baseDriftFactor = inputs.drift ? CONFIG.driftModeFactor : CONFIG.driftFactor;
+            
+            // Apply speed-based drift reduction (lower = more drift)
+            const currentDriftFactor = baseDriftFactor - speedDriftReduction;
 
             // Interpolate current direction towards target direction
             const blendedX = nx * currentDriftFactor + tx * (1 - currentDriftFactor);
