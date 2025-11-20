@@ -12,7 +12,8 @@ export class InputManager {
             down: false,
             left: false,
             right: false,
-            boost: false
+            boost: false,
+            drift: false
         };
         
         this._setupEventListeners();
@@ -44,6 +45,10 @@ export class InputManager {
             case 'shift': 
                 this.inputs.boost = true; 
                 break;
+            case ' ':
+            case 'spacebar':
+                this.inputs.drift = true;
+                break;
         }
     }
     
@@ -67,6 +72,10 @@ export class InputManager {
                 break;
             case 'shift': 
                 this.inputs.boost = false; 
+                break;
+            case ' ':
+            case 'spacebar':
+                this.inputs.drift = false;
                 break;
         }
     }
@@ -93,5 +102,9 @@ export class InputManager {
     
     isBoosting() {
         return this.inputs.boost;
+    }
+    
+    isDrifting() {
+        return this.inputs.drift;
     }
 }

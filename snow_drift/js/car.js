@@ -116,14 +116,15 @@ export class Car {
     _updatePhysics(inputs) {
         // 1. Handle acceleration
         const currentMaxSpeed = inputs.boost ? CONFIG.boostSpeed : CONFIG.maxSpeed;
+        const currentAcceleration = inputs.drift ? CONFIG.driftModeAcceleration : CONFIG.acceleration;
         
         if (inputs.up) {
-            this.state.vx += Math.sin(this.state.angle) * CONFIG.acceleration;
-            this.state.vz += Math.cos(this.state.angle) * CONFIG.acceleration;
+            this.state.vx += Math.sin(this.state.angle) * currentAcceleration;
+            this.state.vz += Math.cos(this.state.angle) * currentAcceleration;
         }
         if (inputs.down) {
-            this.state.vx -= Math.sin(this.state.angle) * CONFIG.acceleration;
-            this.state.vz -= Math.cos(this.state.angle) * CONFIG.acceleration;
+            this.state.vx -= Math.sin(this.state.angle) * currentAcceleration;
+            this.state.vz -= Math.cos(this.state.angle) * currentAcceleration;
         }
 
         // 2. Calculate speed
@@ -155,7 +156,7 @@ export class Car {
         }
 
         // 4. Apply drift physics (ice effect)
-        this._applyDrift();
+        this._applyDrift(inputs);
 
         // 5. Apply friction
         this.state.vx *= CONFIG.friction;
@@ -173,7 +174,7 @@ export class Car {
         this.state.z += this.state.vz;
     }
     
-    _applyDrift() {
+    _applyDrift(inputs) {
         const vMag = Math.sqrt(
             this.state.vx * this.state.vx + 
             this.state.vz * this.state.vz
@@ -188,9 +189,12 @@ export class Car {
             const tx = Math.sin(this.state.angle);
             const tz = Math.cos(this.state.angle);
 
+            // Use different drift factor when drift mode is active
+            const currentDriftFactor = inputs.drift ? CONFIG.driftModeFactor : CONFIG.driftFactor;
+
             // Interpolate current direction towards target direction
-            const blendedX = nx * CONFIG.driftFactor + tx * (1 - CONFIG.driftFactor);
-            const blendedZ = nz * CONFIG.driftFactor + tz * (1 - CONFIG.driftFactor);
+            const blendedX = nx * currentDriftFactor + tx * (1 - currentDriftFactor);
+            const blendedZ = nz * currentDriftFactor + tz * (1 - currentDriftFactor);
             
             // Re-normalize
             const blendedMag = Math.sqrt(blendedX * blendedX + blendedZ * blendedZ);

@@ -21,9 +21,11 @@ export const CONFIG = {
     maxSpeed: 1.8,
     boostSpeed: 2.5,
     acceleration: 0.03,
+    driftModeAcceleration: 0.02,  // Reduced acceleration when drifting
     friction: 0.98,          // General air resistance
     turnSpeed: 0.04,
-    driftFactor: 0.94,       // How much velocity aligns with heading per frame (Lower = More Drift/Ice)
+    driftFactor: 0.54,       // How much velocity aligns with heading per frame (Lower = More Drift/Ice)
+    driftModeFactor: 0.65,   // Drift factor when drift mode is active (even more sliding)
     gripThreshold: 0.1,      // Speed needed to steer effectively
     bounceCoefficient: 0.5,  // How much velocity is retained after boundary collision
     
@@ -53,9 +55,11 @@ export const CONFIG = {
     // Particle Effects
     snowFallSpeed: 0.2,
     snowRespawnHeight: 50,
-    trailParticleLife: 1.0,
-    trailParticleDecay: 0.02,
-    trailParticleRise: 0.05,
+    trailParticleLife: 1.5,       // Longer life for more visible trails
+    trailParticleDecay: 0.015,    // Slower decay
+    trailParticleRise: 0.08,      // Rise faster for more dramatic effect
+    trailParticleSize: 0.6,       // Larger particles
+    trailParticleOpacity: 0.9,    // More opaque
     
     // Gameplay
     speedMultiplier: 50       // Convert internal speed to km/h for display

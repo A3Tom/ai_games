@@ -80,9 +80,9 @@ export class TrailParticles {
         
         const trailMat = new THREE.PointsMaterial({ 
             color: 0xffffff, 
-            size: 0.3, 
+            size: CONFIG.trailParticleSize, 
             transparent: true, 
-            opacity: 0.6 
+            opacity: CONFIG.trailParticleOpacity 
         });
         
         this.system = new THREE.Points(trailGeo, trailMat);
@@ -105,9 +105,14 @@ export class TrailParticles {
     update(carState) {
         const posAttribute = this.system.geometry.attributes.position;
         
-        // Spawn new particles when car is moving fast
-        if (carState.speed > 0.5) {
-            this._spawnParticles(carState);
+        // Always spawn particles when drifting, otherwise require minimum speed
+        const shouldSpawn = carState.isDrifting || carState.speed > 0.3;
+        const spawnRate = carState.isDrifting ? 3 : 1; // Triple spawn rate when drifting
+        
+        if (shouldSpawn) {
+            for(let s = 0; s < spawnRate; s++) {
+                this._spawnParticles(carState);
+            }
         }
         
         // Update all particles
@@ -117,6 +122,14 @@ export class TrailParticles {
             if (p.life > 0) {
                 p.life -= CONFIG.trailParticleDecay;
                 p.y += CONFIG.trailParticleRise; // Rise up like snow dust
+                
+                // Apply lateral velocity (drift spread effect)
+                p.x += p.vx;
+                p.z += p.vz;
+                
+                // Dampen velocity over time
+                p.vx *= 0.95;
+                p.vz *= 0.95;
                 
                 posAttribute.setXYZ(i, p.x, p.y, p.z);
             } else {
@@ -141,10 +154,20 @@ export class TrailParticles {
             const cos = Math.cos(carState.angle);
             const sin = Math.sin(carState.angle);
             
-            p.x = carState.x + (wx * cos + wz * sin);
-            p.z = carState.z + (-wx * sin + wz * cos);
-            p.y = 0.1;
+            // Add some random spread for more natural effect
+            const spreadX = (Math.random() - 0.5) * 0.5;
+            const spreadZ = (Math.random() - 0.5) * 0.5;
+            
+            p.x = carState.x + (wx * cos + wz * sin) + spreadX;
+            p.z = carState.z + (-wx * sin + wz * cos) + spreadZ;
+            p.y = 0.1 + Math.random() * 0.1; // Slight random height
             p.life = CONFIG.trailParticleLife;
+            
+            // Add some lateral velocity when drifting
+            if (carState.isDrifting) {
+                p.vx = (Math.random() - 0.5) * 0.2;
+                p.vz = (Math.random() - 0.5) * 0.2;
+            }
             
             this.particleIdx = (this.particleIdx + 1) % this.particles.length;
         }

@@ -106,7 +106,8 @@ export class Game {
             x: carPosition.x,
             z: carPosition.z,
             angle: this.car.getAngle(),
-            speed: this.car.getSpeed()
+            speed: this.car.getSpeed(),
+            isDrifting: inputs.drift
         };
         this.trailParticles.update(carState);
         
