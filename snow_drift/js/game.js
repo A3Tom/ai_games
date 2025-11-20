@@ -28,7 +28,7 @@ export class Game {
         this.highScoreElement = null;
         this.score = 0;
         this.highScore = this._loadHighScore();
-        this.timeRemaining = 30;
+        this.timeRemaining = CONFIG.timeRemaining;
         this.gameStarted = false;
         this.gameOver = false;
         

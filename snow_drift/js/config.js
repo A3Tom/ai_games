@@ -6,6 +6,7 @@ export const CONFIG = {
     // World Settings
     groundSize: 400,
     treeCount: 80,
+    timeRemaining: 20,
     
     // Particle Settings
     snowCount: 4000,
