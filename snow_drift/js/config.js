@@ -5,11 +5,11 @@
 export const CONFIG = {
     // World Settings
     groundSize: 400,
-    treeCount: 60,
+    treeCount: 80,
     
     // Particle Settings
-    snowCount: 2000,
-    trailParticleCount: 300,
+    snowCount: 4000,
+    trailParticleCount: 1300,
     
     // Camera Settings
     cameraHeight: 15,

@@ -105,14 +105,15 @@ export class TrailParticles {
     update(carState) {
         const posAttribute = this.system.geometry.attributes.position;
         
-        // Always spawn particles when drifting, otherwise require minimum speed
-        const shouldSpawn = carState.isDrifting || carState.speed > 0.3;
-        const spawnRate = carState.isDrifting ? 3 : 1; // Triple spawn rate when drifting
-        
-        if (shouldSpawn) {
-            for(let s = 0; s < spawnRate; s++) {
+        // Spawn particles when drifting (guaranteed) or when moving at speed
+        if (carState.isDrifting && carState.speed > 0.1) {
+            // Always spawn multiple particles per frame when drifting
+            for(let s = 0; s < 3; s++) {
                 this._spawnParticles(carState);
             }
+        } else if (carState.speed > 0.3 && Math.random() < 0.3) {
+            // Occasional particles when just driving fast (not drifting)
+            this._spawnParticles(carState);
         }
         
         // Update all particles
@@ -154,19 +155,25 @@ export class TrailParticles {
             const cos = Math.cos(carState.angle);
             const sin = Math.sin(carState.angle);
             
-            // Add some random spread for more natural effect
-            const spreadX = (Math.random() - 0.5) * 0.5;
-            const spreadZ = (Math.random() - 0.5) * 0.5;
+            // Add some random spread for more natural effect (reduced when drifting for tighter trail)
+            const spreadMultiplier = carState.isDrifting ? 0.3 : 0.5;
+            const spreadX = (Math.random() - 0.5) * spreadMultiplier;
+            const spreadZ = (Math.random() - 0.5) * spreadMultiplier;
             
             p.x = carState.x + (wx * cos + wz * sin) + spreadX;
             p.z = carState.z + (-wx * sin + wz * cos) + spreadZ;
             p.y = 0.1 + Math.random() * 0.1; // Slight random height
             p.life = CONFIG.trailParticleLife;
             
-            // Add some lateral velocity when drifting
+            // Add stronger lateral velocity when drifting for more dramatic effect
             if (carState.isDrifting) {
-                p.vx = (Math.random() - 0.5) * 0.2;
-                p.vz = (Math.random() - 0.5) * 0.2;
+                // Particles spray out to the side based on drift direction
+                const driftDirection = w; // Left or right wheel
+                p.vx = (Math.random() - 0.5) * 0.3 + driftDirection * 0.1;
+                p.vz = (Math.random() - 0.5) * 0.3;
+            } else {
+                p.vx = 0;
+                p.vz = 0;
             }
             
             this.particleIdx = (this.particleIdx + 1) % this.particles.length;

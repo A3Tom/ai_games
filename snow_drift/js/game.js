@@ -514,7 +514,7 @@ export class Game {
         
         // Buckfast label (like the iconic yellow label)
         const buckfastLabel = document.createElement('div');
-        buckfastLabel.textContent = 'The tonic';
+        buckfastLabel.textContent = 'THE TONIC';
         buckfastLabel.style.cssText = `
             position: absolute;
             top: 50%;
