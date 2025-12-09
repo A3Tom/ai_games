@@ -6,7 +6,11 @@ import { Board, GameState, DifficultyLevel } from '../types';
 /**
  * Custom hook to manage all game state and logic
  */
-export const useGameState = (difficulty: DifficultyLevel) => {
+export const useGameState = (
+  difficulty: DifficultyLevel,
+  onGameStart?: (difficulty: DifficultyLevel) => void,
+  onGameEnd?: (result: 'won' | 'lost' | 'reset') => void
+) => {
   const [board, setBoard] = useState<Board>([]);
   const [gameState, setGameState] = useState<GameState>(GAME_STATES.IDLE as GameState);
   const [mineCount, setMineCount] = useState(0);
@@ -14,11 +18,17 @@ export const useGameState = (difficulty: DifficultyLevel) => {
 
   const resetGame = useCallback(() => {
     const { rows, cols, mines } = DIFFICULTIES[difficulty];
+    
+    // End current game if it was in progress
+    if (gameState === GAME_STATES.PLAYING) {
+      onGameEnd?.('reset');
+    }
+    
     setBoard(createEmptyBoard(rows, cols));
     setGameState(GAME_STATES.IDLE as GameState);
     setMineCount(mines);
     setFlagCount(0);
-  }, [difficulty]);
+  }, [difficulty, gameState, onGameEnd]);
 
   const handleCellClick = useCallback(
     (x: number, y: number) => {
@@ -32,6 +42,7 @@ export const useGameState = (difficulty: DifficultyLevel) => {
       if (gameState === GAME_STATES.IDLE) {
         setGameState(GAME_STATES.PLAYING as GameState);
         newBoard = placeMines(newBoard, rows, cols, mines, x, y);
+        onGameStart?.(difficulty);
       }
 
       // Check if clicked on a mine
@@ -39,6 +50,7 @@ export const useGameState = (difficulty: DifficultyLevel) => {
         revealAllMines(newBoard);
         setGameState(GAME_STATES.LOST as GameState);
         setBoard(newBoard);
+        onGameEnd?.('lost');
         return;
       }
 
@@ -50,11 +62,12 @@ export const useGameState = (difficulty: DifficultyLevel) => {
         setGameState(GAME_STATES.WON as GameState);
         flagAllMines(newBoard);
         setFlagCount(mines);
+        onGameEnd?.('won');
       }
 
       setBoard(newBoard);
     },
-    [board, gameState, difficulty]
+    [board, gameState, difficulty, onGameStart, onGameEnd]
   );
 
   const handleRightClick = useCallback(

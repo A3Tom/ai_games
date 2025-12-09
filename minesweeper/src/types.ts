@@ -38,3 +38,25 @@ export type Board = Cell[][];
  * Offset coordinate for neighbor cells
  */
 export type Offset = [number, number];
+
+/**
+ * Game session statistics
+ */
+export interface GameSession {
+  startTime: number;
+  endTime?: number;
+  result?: 'won' | 'lost' | 'reset';
+  difficulty: DifficultyLevel;
+}
+
+/**
+ * Progress tracking statistics
+ */
+export interface ProgressStats {
+  gamesWon: number;
+  gamesLost: number;
+  gamesReset: number;
+  totalGames: number;
+  sessions: GameSession[];
+  currentSession?: GameSession;
+}
