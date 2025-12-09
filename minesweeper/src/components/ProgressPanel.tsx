@@ -4,12 +4,14 @@ import { ProgressStats } from '../types';
 interface ProgressPanelProps {
   stats: ProgressStats;
   onReset: () => void;
+  fastestTime: number | null;
+  averageTime: number | null;
 }
 
 /**
  * Progress tracking panel component
  */
-export const ProgressPanel: React.FC<ProgressPanelProps> = ({ stats, onReset }) => {
+export const ProgressPanel: React.FC<ProgressPanelProps> = ({ stats, onReset, fastestTime, averageTime }) => {
   const { gamesWon, gamesLost, gamesReset, totalGames, currentSession } = stats;
 
   const winRate = totalGames > 0 ? ((gamesWon / totalGames) * 100).toFixed(1) : '0.0';
@@ -19,6 +21,11 @@ export const ProgressPanel: React.FC<ProgressPanelProps> = ({ stats, onReset }) 
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const formatTime = (ms: number | null) => {
+    if (ms === null) return '--:--';
+    return formatDuration(ms);
   };
 
   const currentGameDuration = currentSession 
@@ -54,6 +61,17 @@ export const ProgressPanel: React.FC<ProgressPanelProps> = ({ stats, onReset }) 
         <div className="bg-blue-50 rounded p-3 text-center">
           <div className="text-2xl font-bold text-blue-700">{winRate}%</div>
           <div className="text-xs text-blue-600 uppercase">Win Rate</div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="bg-purple-50 rounded p-3 text-center border border-purple-100">
+          <div className="text-xl font-bold text-purple-700">{formatTime(fastestTime)}</div>
+          <div className="text-xs text-purple-600 uppercase">Fastest Time</div>
+        </div>
+        <div className="bg-indigo-50 rounded p-3 text-center border border-indigo-100">
+          <div className="text-xl font-bold text-indigo-700">{formatTime(averageTime)}</div>
+          <div className="text-xs text-indigo-600 uppercase">Average Time</div>
         </div>
       </div>
 

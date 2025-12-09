@@ -71,6 +71,26 @@ export const useProgressTracking = () => {
     });
   }, []);
 
+  const getWonSessions = useCallback(() => {
+    return stats.sessions.filter(s => s.result === 'won' && s.endTime);
+  }, [stats.sessions]);
+
+  const getFastestTime = useCallback(() => {
+    const wonSessions = getWonSessions();
+    if (wonSessions.length === 0) return null;
+    
+    const times = wonSessions.map(s => s.endTime! - s.startTime);
+    return Math.min(...times);
+  }, [getWonSessions]);
+
+  const getAverageTime = useCallback(() => {
+    const wonSessions = getWonSessions();
+    if (wonSessions.length === 0) return null;
+    
+    const totalTime = wonSessions.reduce((sum, s) => sum + (s.endTime! - s.startTime), 0);
+    return Math.floor(totalTime / wonSessions.length);
+  }, [getWonSessions]);
+
   const resetStats = useCallback(() => {
     const emptyStats: ProgressStats = {
       gamesWon: 0,
@@ -88,5 +108,7 @@ export const useProgressTracking = () => {
     startGame,
     endGame,
     resetStats,
+    getFastestTime,
+    getAverageTime,
   };
 };

@@ -15,7 +15,7 @@ import { DifficultyLevel } from './types';
 export function Minesweeper() {
   const [difficulty, setDifficulty] = useState<DifficultyLevel>('Beginner');
 
-  const { stats, startGame, endGame, resetStats } = useProgressTracking();
+  const { stats, startGame, endGame, resetStats, getFastestTime, getAverageTime } = useProgressTracking();
 
   const { board, gameState, mineCount, flagCount, resetGame, handleCellClick, handleRightClick } = useGameState(
     difficulty,
@@ -41,7 +41,12 @@ export function Minesweeper() {
     <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4 font-sans text-slate-900">
       <DifficultySelector difficulty={difficulty} onChange={setDifficulty} />
 
-      <ProgressPanel stats={stats} onReset={resetStats} />
+      <ProgressPanel 
+        stats={stats} 
+        onReset={resetStats} 
+        fastestTime={getFastestTime()} 
+        averageTime={getAverageTime()} 
+      />
 
       <div className="bg-slate-300 p-4 rounded-lg shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_10px_10px_-5px_rgba(0,0,0,0.04)] border-t-4 border-l-4 border-white border-b-4 border-r-4 border-slate-400 select-none">
         <GameHeader mineCount={mineCount} flagCount={flagCount} gameState={gameState} time={time} onReset={handleReset} />
