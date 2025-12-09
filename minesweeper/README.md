@@ -90,6 +90,22 @@ npm run dev
 
 Then open http://localhost:5173 in your browser.
 
+### Production Build
+
+```bash
+npm run build
+```
+
+The built files will be in the `dist/` directory.
+
+### Deploy to GitHub Pages
+
+This project is part of the AI Games collection and is automatically deployed when you push to master.
+
+**Live Demo:** https://a3tom.github.io/ai_games/minesweeper/
+
+The deployment workflow is configured in `.github/workflows/deploy.yml` at the repository root.
+
 ### Legacy Version (JavaScript/Babel)
 
 Open `index-legacy.html` directly in your browser (no build required).
