@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Games Collection</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+            color: white;
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 3rem;
+            font-size: 1.2rem;
+        }
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        .game-card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+        .game-card h2 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+            font-size: 1.8rem;
+        }
+        .game-card p {
+            color: #666;
+            line-height: 1.6;
+        }
+        .tag {
+            display: inline-block;
+            background: #f0f0f0;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-top: 1rem;
+            color: #555;
+        }
+        footer {
+            text-align: center;
+            margin-top: 3rem;
+            color: rgba(255,255,255,0.8);
+            font-size: 0.9rem;
+        }
+        footer a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 AI Games Collection</h1>
+        <p class="subtitle">A collection of games built with AI assistance</p>
+        
+        <div class="games-grid">
+            <a href="./minesweeper/" class="game-card">
+                <h2>💣 Minesweeper</h2>
+                <p>Classic minesweeper with progress tracking, timer, and multiple difficulty levels. First click is always safe!</p>
+                <span class="tag">React + TypeScript</span>
+            </a>
+            
+            <a href="./snow_drift/" class="game-card">
+                <h2>❄️ Snow Drift</h2>
+                <p>Navigate through the snowy terrain and collect pickups!</p>
+                <span class="tag">HTML5 Canvas</span>
+            </a>
+            
+            <!-- Add more games here as you create them -->
+        </div>
+
+        <footer>
+            <p>View source on <a href="https://github.com/A3Tom/ai_games" target="_blank">GitHub</a></p>
+        </footer>
+    </div>
+</body>
+</html>
