@@ -1,32 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Minesweeper</title>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .inset-shadow {
-            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.2);
-        }
-    </style>
-</head>
-<body>
+  </head>
+  <body>
     <div id="root"></div>
-
-    <script type="text/babel" src="./js/constants.js"></script>
-    <script type="text/babel" src="./js/icons.js"></script>
-    <script type="text/babel" src="./js/board.js"></script>
-    <script type="text/babel" src="./js/components/Cell.js"></script>
-    <script type="text/babel" src="./js/components/Board.js"></script>
-    <script type="text/babel" src="./js/components/GameHeader.js"></script>
-    <script type="text/babel" src="./js/components/DifficultySelector.js"></script>
-    <script type="text/babel" src="./js/hooks/useGameTimer.js"></script>
-    <script type="text/babel" src="./js/hooks/useGameState.js"></script>
-    <script type="text/babel" src="./js/Minesweeper.js"></script>
-    <script type="text/babel" src="./js/main.js"></script>
-</body>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
