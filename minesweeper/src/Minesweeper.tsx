@@ -21,7 +21,8 @@ export function Minesweeper() {
   useEffect(() => {
     resetGame();
     resetTimer();
-  }, [difficulty, resetGame, resetTimer]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [difficulty]);
 
   const handleReset = () => {
     resetGame();
