@@ -1,0 +1,6 @@
+/* Tailwind v4 CSS-first configuration — no tailwind.config.ts needed */
+@import 'tailwindcss';
+@import './variables.css';
+
+/* Base resets and global styles */
+/* Per docs/03-CODING-STANDARDS.md Section 3.4: No global styles except in main.css */

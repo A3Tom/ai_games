@@ -1,0 +1,16 @@
+:root {
+  /* Colors — will be refined in UI phases */
+  --color-ocean: #0a1628;
+  --color-water: #1e3a5f;
+  --color-hit: #ef4444;
+  --color-miss: #94a3b8;
+  --color-ship: #475569;
+
+  /* Grid */
+  --grid-cell-size: 2.5rem;
+  --grid-gap: 1px;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 300ms ease;
+}
