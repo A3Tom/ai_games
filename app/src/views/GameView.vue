@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch, onUnmounted } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import { useGameStore } from '../stores/game'
@@ -14,6 +14,7 @@ import PlayerBoard from '../components/game/PlayerBoard.vue'
 import OpponentBoard from '../components/game/OpponentBoard.vue'
 import TurnIndicator from '../components/game/TurnIndicator.vue'
 import GameStatus from '../components/game/GameStatus.vue'
+import GameOver from '../components/game/GameOver.vue'
 
 const props = defineProps<{
   roomId: string
@@ -21,8 +22,18 @@ const props = defineProps<{
 
 const gameStore = useGameStore()
 const connectionStore = useConnectionStore()
-const { phase, myBoard, opponentBoard, myShips, isMyTurn, canFire, shotHistory } =
-  storeToRefs(gameStore)
+const {
+  phase,
+  myBoard,
+  opponentBoard,
+  myShips,
+  opponentShips,
+  isMyTurn,
+  canFire,
+  shotHistory,
+  winner,
+  cheatDetected,
+} = storeToRefs(gameStore)
 const { peerConnected } = storeToRefs(connectionStore)
 
 // Initialize protocol connection — useGameProtocol creates the relay internally
@@ -39,9 +50,7 @@ watch(peerConnected, (connected) => {
 })
 
 function handleBoardCommitted(): void {
-  // The store has already transitioned to COMMIT phase.
-  // This handler exists for future use (e.g., logging, analytics).
-  // No action needed in Phase 10.
+  // Store has already transitioned to COMMIT phase; handler exists for future use
 }
 
 // --- Battle phase logic ---
@@ -102,6 +111,35 @@ watch([myBoard, shotHistory], () => {
   }
 })
 
+// --- Game over phase logic ---
+
+const opponentRevealed = computed<boolean>(
+  () => opponentShips.value.length > 0,
+)
+
+const effectiveWinner = computed<'me' | 'opponent'>(() => {
+  if (winner.value !== null) return winner.value
+  const myRemaining = gameStore.remainingShips.me
+  return myRemaining === 0 ? 'opponent' : 'me'
+})
+
+const rematchRequested = ref<boolean>(false)
+// Protocol handles mutual rematch internally via resetForRematch(); this ref is for the UI contract
+const opponentRematchRequested = ref<boolean>(false)
+
+function handleRequestRematch(): void {
+  if (rematchRequested.value) return
+  rematchRequested.value = true
+  protocol.sendRematch()
+}
+
+watch(phase, (newPhase) => {
+  if (newPhase !== GAME_PHASES.GAMEOVER && newPhase !== GAME_PHASES.REVEAL) {
+    rematchRequested.value = false
+    opponentRematchRequested.value = false
+  }
+})
+
 onUnmounted(() => {
   protocol.disconnect()
 })
@@ -137,12 +175,19 @@ onUnmounted(() => {
       />
     </div>
 
-    <div
-      v-else-if="phase === GAME_PHASES.GAMEOVER || phase === GAME_PHASES.REVEAL"
-      class="flex flex-1 items-center justify-center"
-    >
-      <p class="text-gray-400">Game over — coming in Phase 12</p>
-    </div>
+    <GameOver
+      v-else-if="phase === GAME_PHASES.REVEAL || phase === GAME_PHASES.GAMEOVER"
+      :winner="effectiveWinner"
+      :cheat-detected="cheatDetected"
+      :my-board="myBoard"
+      :my-ships="myShips"
+      :opponent-board="opponentBoard"
+      :opponent-ships="opponentShips"
+      :opponent-revealed="opponentRevealed"
+      :rematch-requested="rematchRequested"
+      :opponent-rematch-requested="opponentRematchRequested"
+      @request-rematch="handleRequestRematch"
+    />
 
     <div
       v-else

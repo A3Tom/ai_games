@@ -9,6 +9,7 @@ import { GAME_PHASES } from '../types/game'
 const mockDisconnect = vi.fn()
 const mockSendReady = vi.fn()
 const mockSendShot = vi.fn()
+const mockSendRematch = vi.fn()
 
 vi.mock('../composables/useGameProtocol', () => ({
   useGameProtocol: () => ({
@@ -17,7 +18,7 @@ vi.mock('../composables/useGameProtocol', () => ({
     sendShot: mockSendShot,
     sendResult: vi.fn(),
     sendReveal: vi.fn(),
-    sendRematch: vi.fn(),
+    sendRematch: mockSendRematch,
     disconnect: mockDisconnect,
   }),
 }))
@@ -56,11 +57,33 @@ const GameStatusStub = {
   props: ['myShips', 'mySunkShips', 'opponentSunkShips'],
 }
 
+const GameOverStub = {
+  name: 'GameOver',
+  template: '<div class="game-over-stub"></div>',
+  props: [
+    'winner',
+    'cheatDetected',
+    'myBoard',
+    'myShips',
+    'opponentBoard',
+    'opponentShips',
+    'opponentRevealed',
+    'rematchRequested',
+    'opponentRematchRequested',
+  ],
+  emits: ['requestRematch'],
+}
+
 const battleStubs = {
   PlayerBoard: PlayerBoardStub,
   OpponentBoard: OpponentBoardStub,
   TurnIndicator: TurnIndicatorStub,
   GameStatus: GameStatusStub,
+}
+
+const gameOverStubs = {
+  ...battleStubs,
+  GameOver: GameOverStub,
 }
 
 function transitionToBattle(): void {
@@ -77,6 +100,7 @@ describe('GameView', () => {
     mockDisconnect.mockClear()
     mockSendReady.mockClear()
     mockSendShot.mockClear()
+    mockSendRematch.mockClear()
   })
 
   it('shows connecting message in LOBBY phase', () => {
@@ -185,7 +209,22 @@ describe('GameView', () => {
     expect(store.shotHistory[0]?.y).toBe(4)
   })
 
-  it('shows placeholder for GAMEOVER phase', () => {
+  it('reveal phase renders GameOver component', () => {
+    const store = useGameStore()
+    store.startSetup()
+    store.commitBoard('a'.repeat(64), new Uint8Array(32))
+    store.receiveOpponentCommit('b'.repeat(64))
+    store.startBattle()
+    store.startReveal()
+
+    const wrapper = mount(GameView, {
+      props: { roomId: 'test1234' },
+      global: { stubs: gameOverStubs },
+    })
+    expect(wrapper.find('.game-over-stub').exists()).toBe(true)
+  })
+
+  it('gameover phase renders GameOver component', () => {
     const store = useGameStore()
     store.startSetup()
     store.commitBoard('a'.repeat(64), new Uint8Array(32))
@@ -195,7 +234,78 @@ describe('GameView', () => {
 
     const wrapper = mount(GameView, {
       props: { roomId: 'test1234' },
+      global: { stubs: gameOverStubs },
     })
-    expect(wrapper.text()).toContain('coming in Phase 12')
+    expect(wrapper.find('.game-over-stub').exists()).toBe(true)
+  })
+
+  it('battle components NOT rendered during gameover', () => {
+    const store = useGameStore()
+    store.startSetup()
+    store.commitBoard('a'.repeat(64), new Uint8Array(32))
+    store.receiveOpponentCommit('b'.repeat(64))
+    store.startBattle()
+    store.finishGame('me')
+
+    const wrapper = mount(GameView, {
+      props: { roomId: 'test1234' },
+      global: { stubs: gameOverStubs },
+    })
+    expect(wrapper.find('.player-board-stub').exists()).toBe(false)
+    expect(wrapper.find('.opponent-board-stub').exists()).toBe(false)
+    expect(wrapper.find('.turn-indicator-stub').exists()).toBe(false)
+    expect(wrapper.find('.game-status-stub').exists()).toBe(false)
+  })
+
+  it('GameOver receives correct winner prop', () => {
+    const store = useGameStore()
+    store.startSetup()
+    store.commitBoard('a'.repeat(64), new Uint8Array(32))
+    store.receiveOpponentCommit('b'.repeat(64))
+    store.startBattle()
+    store.finishGame('opponent')
+
+    const wrapper = mount(GameView, {
+      props: { roomId: 'test1234' },
+      global: { stubs: gameOverStubs },
+    })
+    const gameOver = wrapper.findComponent(GameOverStub)
+    expect(gameOver.props('winner')).toBe('opponent')
+  })
+
+  it('GameOver receives opponentRevealed as false when opponentShips is empty', () => {
+    const store = useGameStore()
+    store.startSetup()
+    store.commitBoard('a'.repeat(64), new Uint8Array(32))
+    store.receiveOpponentCommit('b'.repeat(64))
+    store.startBattle()
+    store.startReveal()
+
+    const wrapper = mount(GameView, {
+      props: { roomId: 'test1234' },
+      global: { stubs: gameOverStubs },
+    })
+    const gameOver = wrapper.findComponent(GameOverStub)
+    expect(gameOver.props('opponentRevealed')).toBe(false)
+  })
+
+  it('GameOver receives opponentRevealed as true when opponentShips is populated', () => {
+    const store = useGameStore()
+    store.startSetup()
+    store.commitBoard('a'.repeat(64), new Uint8Array(32))
+    store.receiveOpponentCommit('b'.repeat(64))
+    store.startBattle()
+    store.startReveal()
+    store.receiveReveal(
+      [{ type: 'destroyer', x: 0, y: 0, orientation: 'h' }],
+      'c'.repeat(64),
+    )
+
+    const wrapper = mount(GameView, {
+      props: { roomId: 'test1234' },
+      global: { stubs: gameOverStubs },
+    })
+    const gameOver = wrapper.findComponent(GameOverStub)
+    expect(gameOver.props('opponentRevealed')).toBe(true)
   })
 })
