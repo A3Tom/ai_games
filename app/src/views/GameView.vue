@@ -15,6 +15,7 @@ import OpponentBoard from '../components/game/OpponentBoard.vue'
 import TurnIndicator from '../components/game/TurnIndicator.vue'
 import GameStatus from '../components/game/GameStatus.vue'
 import GameOver from '../components/game/GameOver.vue'
+import ReconnectionOverlay from '../components/shared/ReconnectionOverlay.vue'
 
 const props = defineProps<{
   roomId: string
@@ -195,5 +196,7 @@ onUnmounted(() => {
     >
       <p class="text-gray-400">Connecting to room {{ roomId }}...</p>
     </div>
+
+    <ReconnectionOverlay />
   </div>
 </template>

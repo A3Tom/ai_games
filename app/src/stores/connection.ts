@@ -54,6 +54,11 @@ export const useConnectionStore = defineStore('connection', () => {
     reconnectAttempts.value = 0
   }
 
+  function resetReconnection(): void {
+    reconnectAttempts.value = 0
+    status.value = 'reconnecting'
+  }
+
   function reset(): void {
     status.value = 'disconnected'
     roomId.value = null
@@ -83,6 +88,7 @@ export const useConnectionStore = defineStore('connection', () => {
     updatePing,
     incrementReconnectAttempts,
     resetReconnectAttempts,
+    resetReconnection,
     reset,
   }
 })

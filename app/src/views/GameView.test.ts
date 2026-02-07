@@ -74,16 +74,23 @@ const GameOverStub = {
   emits: ['requestRematch'],
 }
 
+const ReconnectionOverlayStub = {
+  name: 'ReconnectionOverlay',
+  template: '<div data-testid="reconnection-overlay-stub"></div>',
+}
+
 const battleStubs = {
   PlayerBoard: PlayerBoardStub,
   OpponentBoard: OpponentBoardStub,
   TurnIndicator: TurnIndicatorStub,
   GameStatus: GameStatusStub,
+  ReconnectionOverlay: ReconnectionOverlayStub,
 }
 
 const gameOverStubs = {
   ...battleStubs,
   GameOver: GameOverStub,
+  ReconnectionOverlay: ReconnectionOverlayStub,
 }
 
 function transitionToBattle(): void {
@@ -307,5 +314,24 @@ describe('GameView', () => {
     })
     const gameOver = wrapper.findComponent(GameOverStub)
     expect(gameOver.props('opponentRevealed')).toBe(true)
+  })
+
+  it('renders ReconnectionOverlay', () => {
+    const wrapper = mount(GameView, {
+      props: { roomId: 'test1234' },
+      global: { stubs: { ReconnectionOverlay: ReconnectionOverlayStub } },
+    })
+    expect(wrapper.find('[data-testid="reconnection-overlay-stub"]').exists()).toBe(true)
+  })
+
+  it('overlay coexists with battle phase content', () => {
+    transitionToBattle()
+
+    const wrapper = mount(GameView, {
+      props: { roomId: 'test1234' },
+      global: { stubs: { ...battleStubs, ReconnectionOverlay: ReconnectionOverlayStub } },
+    })
+    expect(wrapper.find('.player-board-stub').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="reconnection-overlay-stub"]').exists()).toBe(true)
   })
 })

@@ -179,7 +179,7 @@ onUnmounted(() => {
       <button
         type="button"
         :disabled="!allShipsPlaced || isCommitting"
-        class="rounded-lg bg-green-600 px-6 py-3 font-bold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+        class="w-full rounded-lg bg-green-600 px-6 py-3 font-bold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
         @click="handleReady"
       >
         {{ isCommitting ? 'Committing...' : 'Ready' }}
