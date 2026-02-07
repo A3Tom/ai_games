@@ -149,6 +149,24 @@ describe('useGameProtocol', () => {
       })
     })
 
+    it('sendCommit starts battle when opponent commit already received (Bug 02)', async () => {
+      gameStore.startSetup()
+      for (const ship of TEST_SHIPS) {
+        gameStore.placeShip(ship)
+      }
+
+      // Opponent commits first — received while local player is still in SETUP
+      capturedOnGameMessage!({ type: 'commit', hash: 'b'.repeat(64) })
+      expect(gameStore.opponentCommitHash).toBe('b'.repeat(64))
+      expect(gameStore.phase).toBe('setup') // not yet committed locally
+
+      // Local player commits second — sendCommit should detect both hashes and start battle
+      await protocol.sendCommit(TEST_SHIPS)
+
+      expect(gameStore.myCommitHash).toBe('a'.repeat(64))
+      expect(gameStore.phase).toBe('battle')
+    })
+
     it('sendShot sends shot message', () => {
       setupBattlePhase(gameStore)
 

@@ -361,6 +361,11 @@ export function useGameProtocol(options: UseGameProtocolOptions): UseGameProtoco
     mySaltHex = result.saltHex
     gameStore.commitBoard(result.hash, result.salt)
     relay.send({ type: 'commit', hash: result.hash })
+
+    // If opponent's commit was already received, both are now ready → start battle
+    if (gameStore.myCommitHash !== null && gameStore.opponentCommitHash !== null) {
+      gameStore.startBattle()
+    }
   }
 
   function sendShot(x: number, y: number): void {
