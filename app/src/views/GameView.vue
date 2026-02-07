@@ -5,7 +5,7 @@ import { storeToRefs } from 'pinia'
 import { useGameStore } from '../stores/game'
 import { useConnectionStore } from '../stores/connection'
 import { useGameProtocol } from '../composables/useGameProtocol'
-import type { ShipType } from '../types/game'
+import type { ShipType, PlacedShip } from '../types/game'
 import { GAME_PHASES, CELL_STATES } from '../types/game'
 import { getShipCells } from '../utils/board'
 
@@ -50,8 +50,8 @@ watch(peerConnected, (connected) => {
   }
 })
 
-function handleBoardCommitted(): void {
-  // Store has already transitioned to COMMIT phase; handler exists for future use
+async function handleBoardCommitted(ships: PlacedShip[]): Promise<void> {
+  await protocol.sendCommit(ships)
 }
 
 // --- Battle phase logic ---

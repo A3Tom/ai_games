@@ -1,24 +1,10 @@
 // @vitest-environment jsdom
-import { vi, describe, it, expect, beforeEach } from 'vitest'
-import { mount, flushPromises } from '@vue/test-utils'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import SetupPhase from './SetupPhase.vue'
 import { useGameStore } from '../../stores/game'
 import { FLEET_CONFIG } from '../../constants/ships'
-
-const mockCommitBoard = vi.fn().mockResolvedValue({
-  hash: 'a'.repeat(64),
-  salt: new Uint8Array(32),
-  saltHex: 'b'.repeat(64),
-})
-
-vi.mock('../../composables/useCrypto', () => ({
-  useCrypto: () => ({
-    isAvailable: true,
-    commitBoard: mockCommitBoard,
-    verifyBoard: vi.fn(),
-  }),
-}))
 
 function placeAllShips(store: ReturnType<typeof useGameStore>): void {
   store.placeShip({ type: 'carrier', x: 0, y: 0, orientation: 'h' })
@@ -33,7 +19,6 @@ describe('SetupPhase', () => {
     setActivePinia(createPinia())
     const store = useGameStore()
     store.startSetup()
-    mockCommitBoard.mockClear()
   })
 
   it('renders 100 GridCell components', () => {
@@ -118,7 +103,7 @@ describe('SetupPhase', () => {
     expect(readyBtn!.attributes('disabled')).toBeUndefined()
   })
 
-  it('clicking ready calls commit flow', async () => {
+  it('clicking ready emits boardCommitted with ships', async () => {
     const store = useGameStore()
     placeAllShips(store)
 
@@ -127,23 +112,21 @@ describe('SetupPhase', () => {
 
     const readyBtn = wrapper.findAll('button').find((b) => b.text() === 'Ready')
     await readyBtn!.trigger('click')
-    await flushPromises()
+    await wrapper.vm.$nextTick()
 
-    expect(mockCommitBoard).toHaveBeenCalledWith(store.myShips)
-    expect(store.myCommitHash).toBe('a'.repeat(64))
-    expect(wrapper.emitted('boardCommitted')).toBeTruthy()
+    const emitted = wrapper.emitted('boardCommitted')
+    expect(emitted).toBeTruthy()
+    expect(emitted![0]![0]).toEqual(store.myShips)
   })
 
-  it('waiting state shown after commit', async () => {
+  it('waiting state shown when phase is commit', async () => {
     const store = useGameStore()
     placeAllShips(store)
+    // Simulate the store transition that GameView/protocol performs after receiving the emit
+    store.commitBoard('a'.repeat(64), new Uint8Array(32))
 
     const wrapper = mount(SetupPhase)
     await wrapper.vm.$nextTick()
-
-    const readyBtn = wrapper.findAll('button').find((b) => b.text() === 'Ready')
-    await readyBtn!.trigger('click')
-    await flushPromises()
 
     expect(wrapper.text()).toContain('Waiting for opponent')
     expect(wrapper.findComponent({ name: 'ShipTray' }).exists()).toBe(false)

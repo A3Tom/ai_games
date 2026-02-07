@@ -3,7 +3,6 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import { useGameStore } from '../../stores/game'
-import { useCrypto } from '../../composables/useCrypto'
 import { canPlaceShip, getShipCells } from '../../utils/board'
 import { FLEET_CONFIG } from '../../constants/ships'
 import { GRID_SIZE, COLUMN_LABELS, ROW_LABELS } from '../../constants/grid'
@@ -14,12 +13,11 @@ import GridCell from '../shared/GridCell.vue'
 import ShipTray from './ShipTray.vue'
 
 const emit = defineEmits<{
-  boardCommitted: []
+  boardCommitted: [ships: PlacedShip[]]
 }>()
 
 const gameStore = useGameStore()
 const { myBoard, myShips, phase } = storeToRefs(gameStore)
-const { commitBoard: cryptoCommitBoard } = useCrypto()
 
 const selectedShip = ref<ShipType | null>(null)
 const currentOrientation = ref<Orientation>('h')
@@ -94,18 +92,10 @@ function handleKeydown(event: KeyboardEvent): void {
   }
 }
 
-async function handleReady(): Promise<void> {
+function handleReady(): void {
   if (!allShipsPlaced.value || isCommitting.value) return
   isCommitting.value = true
-  try {
-    const { hash, salt } = await cryptoCommitBoard(myShips.value)
-    gameStore.commitBoard(hash, salt)
-    // TODO: TICKET CONFLICT — useGameProtocol requires (options: UseGameProtocolOptions) and cannot
-    // be called from SetupPhase. The commit hash relay send is handled by GameView via protocol.
-    emit('boardCommitted')
-  } finally {
-    isCommitting.value = false
-  }
+  emit('boardCommitted', myShips.value)
 }
 
 function handleGridMouseLeave(): void {
