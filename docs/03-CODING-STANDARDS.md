@@ -263,35 +263,6 @@ export function useRelay(roomId: string) {
 
 ---
 
-## 8. Git Conventions
-
-### 8.1 Branch Strategy
-
-- `main` — production. Deploys to GitHub Pages on push.
-- `develop` — integration branch for features.
-- `feat/<name>` — feature branches off `develop`.
-- `fix/<name>` — bugfix branches.
-
-### 8.2 Commit Messages
-
-Follow Conventional Commits:
-
-```
-feat: add ship placement drag-and-drop
-fix: correct hit detection for vertical ships
-refactor: extract board validation into utility
-chore: update dependencies
-docs: add protocol specification
-```
-
-### 8.3 Pull Request Rules
-
-- All PRs target `develop` unless hotfixing production.
-- PRs must pass lint, type-check, and all tests.
-- PRs should be focused — one feature or fix per PR.
-
----
-
 ## 9. Dependency Policy
 
 - **Minimize dependencies.** This is a small project; every dependency is a maintenance burden.
