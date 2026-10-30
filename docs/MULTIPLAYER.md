@@ -30,7 +30,7 @@ A snapshot has `appId`, `roomId`, `capacity`, and `players`. Each player has `id
 
 Joining a second room is atomic: the server validates the destination before removing the player from the source room. A rejected switch leaves the source membership intact. Leaving the same room repeatedly is safe. Rooms disappear when empty; inactive rooms expire according to `ROOM_TIMEOUT_MS`.
 
-IDs use 1–64 ASCII letters, digits, underscores, or hyphens. Display names are trimmed and bounded to 32 characters. The 4 KB frame limit and 60 messages per connection per minute also apply to diagnostic requests. The client requests ping and stats every five seconds while connected.
+IDs use 1–64 ASCII letters, digits, underscores, or hyphens. Display names are trimmed and bounded to 32 characters. The 4 KB frame limit and 60 messages per connection per minute also apply to diagnostic requests. The client requests ping and stats every five seconds by default; games can choose a longer `diagnosticsIntervalMs` to reserve more traffic for play. Dots & Boxes uses fifteen seconds.
 
 ## Metrics
 

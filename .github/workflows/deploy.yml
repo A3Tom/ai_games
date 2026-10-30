@@ -43,6 +43,9 @@ jobs:
         run: node scripts/build-collection.mjs --install --build
         env:
           VITE_RELAY_URL: ${{ vars.VITE_RELAY_URL }}
+
+      - name: Check Dots and Boxes rules and synchronization
+        run: npm test --prefix dots-and-boxes
       
       - name: Setup Pages
         uses: actions/configure-pages@v4

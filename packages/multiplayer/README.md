@@ -45,8 +45,12 @@ exponential backoff, from one to thirty seconds.
 
 State snapshots include current room membership, relay counters, local message
 and UTF-8 byte counts, the last sixty server round-trip samples, lost ping count,
-and the last hundred events. The client requests stats and pings every five
-seconds while connected. Latency is a browser-to-relay round trip, measured with
+and the last hundred events. The client requests stats and pings immediately on
+connection and every five seconds by default. Games can preserve more of the
+relay's message budget with `diagnosticsIntervalMs: 15_000` in the client options.
+Positive finite values are clamped to at least 5,000 milliseconds and at most the
+native timer limit of 2,147,483,647 milliseconds; invalid values use the default.
+Latency is a browser-to-relay round trip, measured with
 the browser's monotonic clock, and works without another player. `resetMetrics()`
 clears local counters and history; relay counters remain process-wide.
 

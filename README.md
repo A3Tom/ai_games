@@ -12,7 +12,7 @@ After the [GHCR workflow](./.github/workflows/ghcr.yml) has published the image,
 docker run -d --name ai-games --restart unless-stopped --pull always -p 14650:14650 ghcr.io/a3tom/ai_games:latest
 ```
 
-Open <http://localhost:14650>. The dashboard links to Multiplayer Lab, Minesweeper, Snow Drift, and Sea Strike. No local Node installation or separate Vite process is needed.
+Open <http://localhost:14650>. The dashboard links to Multiplayer Lab, Dots & Boxes, Minesweeper, Snow Drift, and Sea Strike. No local Node installation or separate Vite process is needed.
 
 To share it with another device on your network, open `http://<your-computer-LAN-IP>:14650` on that device, for example `http://192.168.1.20:14650`. On Linux, `hostname -I` lists your machine's addresses; choose the one for your Ethernet or Wi-Fi network. On Windows, use `ipconfig`; on macOS, look in Network settings.
 
@@ -20,7 +20,7 @@ The web port listens on all host interfaces. Both devices must be on the same re
 
 The lab automatically uses the relay at the address you opened: `ws://<host>:14650/relay` over HTTP, or `wss://<host>/relay` behind HTTPS. Create rooms from the LAN URL so invite links point to an address other devices can reach. A link containing `localhost` only works on the computer that opened it.
 
-**Sea Strike has an existing browser requirement:** creating a game and committing a board need Web Crypto, available on localhost or HTTPS. Its page is included in the dashboard, but playing from another device requires serving this stack behind a trusted HTTPS reverse proxy. The lab's multiplayer tests work over HTTP on your LAN. Snow Drift currently loads Three.js from a CDN, so it needs Internet access.
+**Sea Strike has an existing browser requirement:** creating a game and committing a board need Web Crypto, available on localhost or HTTPS. Its page is included in the dashboard, but playing from another device requires serving this stack behind a trusted HTTPS reverse proxy. Dots & Boxes and the lab's multiplayer tests work over HTTP on your LAN. Snow Drift currently loads Three.js from a CDN, so it needs Internet access.
 
 Useful commands:
 
@@ -30,7 +30,7 @@ docker stop ai-games
 docker start ai-games
 ```
 
-Use `-p 14651:14650` in the run command if host port 14650 is occupied. The dashboard, games, and WebSocket relay all share the published port. Lab rooms allow four players by default; legacy Sea Strike rooms remain limited to two. Pass `-e MAX_CLIENTS_PER_ROOM=8`, `-e MAX_ROOMS=50`, or `-e ROOM_TIMEOUT_MS=60000` to `docker run` to override relay limits. Room state and counters reset when the container restarts.
+Use `-p 14651:14650` in the run command if host port 14650 is occupied. The dashboard, games, and WebSocket relay all share the published port. Dots & Boxes and lab rooms allow four players by default; legacy Sea Strike rooms remain limited to two. Pass `-e MAX_CLIENTS_PER_ROOM=8`, `-e MAX_ROOMS=50`, or `-e ROOM_TIMEOUT_MS=60000` to `docker run` to override relay limits. Room state and counters reset when the container restarts.
 
 If you prefer Compose, copy [`docker-compose.yml`](./docker-compose.yml) to your host and run `docker compose up -d --pull always --wait`. It runs the same single image. Use `docker compose logs -f` and `docker compose down` to view logs and stop it. Configure `HOST_PORT`, relay limits, and `IMAGE_TAG` through a `.env` file beside the manifest.
 
@@ -152,6 +152,7 @@ After the subscription reports a room, send game actions with `client.send({ act
 | App | Source | Technology |
 | --- | --- | --- |
 | Multiplayer Lab | [`playground/`](./playground) | Vue, TypeScript, Vite, shared multiplayer client |
+| Dots & Boxes | [`dots-and-boxes/`](./dots-and-boxes) | Vue, TypeScript, Vite; 2–4 players online or pass-and-play |
 | Minesweeper | [`minesweeper/`](./minesweeper) | React, TypeScript, Vite |
 | Snow Drift | [`snow_drift/`](./snow_drift) | JavaScript, browser rendering |
 | Sea Strike | [`app/`](./app) | Vue, TypeScript, Vite; existing Battleship implementation |
@@ -228,7 +229,7 @@ The workflow in [`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml)
 
 The collection is configured for <https://a3tom.github.io/ai_games/>; the lab's path is `/ai_games/playground/`. Relative asset paths allow the apps to run under that subdirectory.
 
-Pages hosts static files, so deploy the relay separately as a long-running WebSocket service. Set the GitHub repository Actions variable `VITE_RELAY_URL` to its `wss://` endpoint before building; this configures both multiplayer apps. Alternatively, enter the endpoint in the lab. No relay is provisioned by the Pages workflow.
+Pages hosts static files, so deploy the relay separately as a long-running WebSocket service. Set the GitHub repository Actions variable `VITE_RELAY_URL` to its `wss://` endpoint before building; this configures all multiplayer apps. Alternatively, enter the endpoint in the lab or Dots & Boxes. No relay is provisioned by the Pages workflow.
 
 For HTTPS hosting of the container, place your TLS reverse proxy in front of port 14650 and pass WebSocket upgrades. The browser automatically selects `wss://` on HTTPS pages.
 

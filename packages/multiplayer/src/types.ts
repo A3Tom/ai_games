@@ -61,6 +61,8 @@ export interface MultiplayerOptions {
   appId: string
   playerId?: string
   name?: string
+  /** Ping/stats cadence in milliseconds; defaults to 5 seconds and cannot run faster. */
+  diagnosticsIntervalMs?: number
 }
 
 export interface MultiplayerClient {

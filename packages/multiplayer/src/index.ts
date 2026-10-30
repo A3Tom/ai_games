@@ -49,6 +49,12 @@ function describe(message: ServerMessage): string {
  */
 export function createMultiplayerClient(options: MultiplayerOptions): MultiplayerClient {
   const playerId = options.playerId ?? newId()
+  const requestedDiagnosticsInterval = options.diagnosticsIntervalMs
+  // Native timers overflow above a signed 32-bit delay; keep large values slow.
+  const diagnosticsIntervalMs = typeof requestedDiagnosticsInterval === 'number' &&
+    Number.isFinite(requestedDiagnosticsInterval) && requestedDiagnosticsInterval > 0
+    ? Math.min(2_147_483_647, Math.max(DIAGNOSTICS_INTERVAL_MS, requestedDiagnosticsInterval))
+    : DIAGNOSTICS_INTERVAL_MS
   let name = options.name?.trim() || 'Player'
   let state: ClientState = {
     status: 'disconnected', playerId, room: null, server: null,
@@ -288,7 +294,7 @@ export function createMultiplayerClient(options: MultiplayerOptions): Multiplaye
       diagnosticsTimer = setInterval(() => {
         ping()
         requestStats()
-      }, DIAGNOSTICS_INTERVAL_MS)
+      }, diagnosticsIntervalMs)
     }
     current.onmessage = (event: MessageEvent): void => {
       if (socket !== current || destroyed) return

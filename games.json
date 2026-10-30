@@ -10,6 +10,16 @@
     "build": true
   },
   {
+    "id": "dots-and-boxes",
+    "title": "Dots & Boxes",
+    "description": "Connect the dots, claim boxes, and challenge 2–4 players online or on one device.",
+    "icon": "🔷",
+    "tags": ["2–4 players", "Strategy", "Touch friendly"],
+    "path": "dots-and-boxes",
+    "source": "dots-and-boxes",
+    "build": true
+  },
+  {
     "id": "minesweeper",
     "title": "Minesweeper",
     "description": "Clear the board, dodge the mines, and beat your time across three difficulty levels.",

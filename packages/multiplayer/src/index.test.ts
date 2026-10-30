@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMultiplayerClient } from './index'
-import type { MultiplayerClient, RoomSnapshot } from './types'
+import type { MultiplayerClient, MultiplayerOptions, RoomSnapshot } from './types'
 
 class FakeSocket {
   static readonly CONNECTING = 0
@@ -57,8 +57,8 @@ function room(roomId = 'alpha', count = 1): RoomSnapshot {
 describe('multiplayer client lifecycle', () => {
   const clients: MultiplayerClient[] = []
 
-  function client(url = 'ws://localhost:8080'): MultiplayerClient {
-    const created = createMultiplayerClient({ url, appId: 'playground', playerId: 'player1', name: 'Tester' })
+  function client(url = 'ws://localhost:8080', options: Partial<MultiplayerOptions> = {}): MultiplayerClient {
+    const created = createMultiplayerClient({ url, appId: 'playground', playerId: 'player1', name: 'Tester', ...options })
     clients.push(created)
     return created
   }
@@ -112,6 +112,42 @@ describe('multiplayer client lifecycle', () => {
     expect(created.getState().messagesSent).toBe(3)
     expect(created.getState().bytesSent).toBeGreaterThan(0)
     expect(created.getState().bytesReceived).toBeGreaterThan(0)
+  })
+
+  it.each([
+    { label: 'the default cadence', interval: undefined, expected: 5_000 },
+    { label: 'a slower game cadence', interval: 15_000, expected: 15_000 },
+    { label: 'a too-fast cadence', interval: 1_000, expected: 5_000 },
+    { label: 'zero', interval: 0, expected: 5_000 },
+    { label: 'a negative interval', interval: -1, expected: 5_000 },
+    { label: 'NaN', interval: NaN, expected: 5_000 },
+    { label: 'infinity', interval: Infinity, expected: 5_000 },
+  ])('sends diagnostics at the safe interval for $label', ({ interval, expected }) => {
+    const created = client('ws://localhost:8080', { diagnosticsIntervalMs: interval })
+    created.connect()
+    const socket = latestSocket()
+    socket.open()
+    // The first measurement remains immediate even when periodic work is slower.
+    expect(socket.frames('relay:ping')).toHaveLength(1)
+    expect(socket.frames('relay:stats')).toHaveLength(1)
+    socket.receive({ type: 'relay:pong', id: socket.frames('relay:ping')[0]!.id })
+    vi.advanceTimersByTime(expected - 1)
+    expect(socket.frames('relay:ping')).toHaveLength(1)
+    expect(socket.frames('relay:stats')).toHaveLength(1)
+    vi.advanceTimersByTime(1)
+    expect(socket.frames('relay:ping')).toHaveLength(2)
+    expect(socket.frames('relay:stats')).toHaveLength(2)
+  })
+
+  it('prevents an oversized native timer delay from overflowing into rapid diagnostics', () => {
+    const created = client('ws://localhost:8080', { diagnosticsIntervalMs: Number.MAX_VALUE })
+    created.connect()
+    const socket = latestSocket()
+    socket.open()
+    socket.receive({ type: 'relay:pong', id: socket.frames('relay:ping')[0]!.id })
+    vi.advanceTimersByTime(60_000)
+    expect(socket.frames('relay:ping')).toHaveLength(1)
+    expect(socket.frames('relay:stats')).toHaveLength(1)
   })
 
   it('retains confirmed membership after a rejected switch and rejoins it after reconnect', () => {
