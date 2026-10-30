@@ -1,0 +1,42 @@
+[
+  {
+    "id": "playground",
+    "title": "Multiplayer Lab",
+    "description": "Create rooms, invite friends, send test actions, and watch live multiplayer metrics.",
+    "icon": "📡",
+    "tags": ["Multiplayer", "Diagnostics"],
+    "path": "playground",
+    "source": "playground",
+    "build": true
+  },
+  {
+    "id": "minesweeper",
+    "title": "Minesweeper",
+    "description": "Clear the board, dodge the mines, and beat your time across three difficulty levels.",
+    "icon": "💣",
+    "tags": ["Solo", "Puzzle"],
+    "path": "minesweeper",
+    "source": "minesweeper",
+    "build": true
+  },
+  {
+    "id": "snow-drift",
+    "title": "Snow Drift",
+    "description": "Slide around the carpark, collect pickups, and chase a higher drift score.",
+    "icon": "❄️",
+    "tags": ["Solo", "Driving"],
+    "path": "snow_drift",
+    "source": "snow_drift",
+    "build": false
+  },
+  {
+    "id": "sea-strike",
+    "title": "Sea Strike",
+    "description": "Place your fleet and challenge a friend in a browser-based Battleship prototype.",
+    "icon": "⚓",
+    "tags": ["2 players", "Strategy", "HTTPS required on LAN"],
+    "path": "sea-strike",
+    "source": "app",
+    "build": true
+  }
+]

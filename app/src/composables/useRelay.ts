@@ -4,6 +4,7 @@ import type { Ref } from 'vue'
 import type { GameMessage } from '../types/protocol'
 
 import { useConnectionStore } from '../stores/connection'
+import { resolveRelayUrl } from '../utils/relay-url'
 import {
   parseIncomingMessage,
   isPeerCountMessage,
@@ -40,10 +41,7 @@ const PING_INTERVAL_MS = 30_000
 export { BASE_DELAY_MS, MAX_DELAY_MS, MAX_RETRIES, PING_INTERVAL_MS }
 
 export function useRelay(options: UseRelayOptions): UseRelayReturn {
-  const relayUrl = import.meta.env.VITE_RELAY_URL
-  if (!relayUrl) {
-    throw new Error('VITE_RELAY_URL is not configured')
-  }
+  const relayUrl = resolveRelayUrl(import.meta.env.VITE_RELAY_URL, globalThis.location?.href)
 
   const store = useConnectionStore()
   const connected = ref(false)

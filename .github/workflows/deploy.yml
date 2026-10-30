@@ -25,31 +25,24 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '24'
+
+      - name: Install relay and shared client dependencies
+        run: |
+          npm ci --prefix relay
+          npm ci --prefix packages/multiplayer
+
+      - name: Check multiplayer protocol and client
+        run: |
+          npm test --prefix relay
+          npm run build --prefix relay
+          npm test --prefix packages/multiplayer
+          npm run type-check --prefix packages/multiplayer
       
-      # Build Minesweeper
-      - name: Install Minesweeper dependencies
-        run: |
-          cd minesweeper
-          npm ci
-      
-      - name: Build Minesweeper
-        run: |
-          cd minesweeper
-          npm run build
-      
-      # Create deployment structure
-      - name: Create deployment directory
-        run: |
-          mkdir -p deploy
-          cp index.html deploy/
-          cp -r minesweeper/dist deploy/minesweeper
-          
-      # Copy other projects (snow_drift, etc.)
-      - name: Copy Snow Drift
-        run: |
-          mkdir -p deploy/snow_drift
-          cp -r snow_drift/* deploy/snow_drift/
+      - name: Install, build, and package all registered games
+        run: node scripts/build-collection.mjs --install --build
+        env:
+          VITE_RELAY_URL: ${{ vars.VITE_RELAY_URL }}
       
       - name: Setup Pages
         uses: actions/configure-pages@v4
