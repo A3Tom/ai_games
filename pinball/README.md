@@ -71,6 +71,8 @@ Vite's `/api` and `/telemetry` proxies reach the relay at `http://127.0.0.1:1465
 
 Use the page's controls to start a game, operate the flippers and plunger, pause, and save the final score. The browser interface translates input into the engine's controls. The original table's rules, physics, missions, and scoring run in the C++ engine.
 
+Rendering follows the browser's display refresh rate, including 120, 144, 240, and 360 Hz displays. Physics uses fixed 360 Hz updates, independent of rendering, and the table is composed once per displayed frame. This improves motion above 120 FPS without speeding up the game. Actual FPS depends on the display, browser, and available CPU/GPU performance; a 60 Hz screen still displays up to 60 FPS. The original sprite artwork also limits how many distinct flipper animation frames are available.
+
 ```bash
 npm test --prefix pinball
 npm run build --prefix pinball

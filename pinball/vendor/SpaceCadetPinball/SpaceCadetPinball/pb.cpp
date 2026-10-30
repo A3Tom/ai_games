@@ -327,8 +327,11 @@ void pb::frame(float dtMilliSec)
 		nudge::nudge_count = nudgeDec;
 	}
 	timer::check();
+#ifndef __EMSCRIPTEN__
+	// The browser composes once per repaint after all fixed simulation steps.
 	render::update();
 	score::update(MainTable->CurScoreStruct);
+#endif
 	if (!MainTable->TiltLockFlag)
 	{
 		if (nudge::nudge_count > 0.5f)

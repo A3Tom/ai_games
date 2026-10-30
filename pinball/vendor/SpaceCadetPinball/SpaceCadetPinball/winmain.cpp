@@ -15,6 +15,8 @@
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #include "browser.h"
+#include "score.h"
+#include "TPinballTable.h"
 #endif
 
 constexpr const char* winmain::Version;
@@ -497,14 +499,22 @@ void winmain::MainLoopBrowser()
 	}
 	else
 	{
-		const double step = 1000.0 / options::DefUps;
+		// Match the native engine's highest supported update rate so high-refresh
+		// displays receive fresh positions. Fixed steps keep game speed independent
+		// of the browser's display-synchronized callback rate.
+		const double step = 1000.0 / options::MaxUps;
 		accumulator += elapsed;
-		while (accumulator >= step)
+		// Allow for clock subtraction rounding at exact refresh boundaries.
+		while (accumulator + 1e-6 >= step)
 		{
 			pb::frame(static_cast<float>(step));
-			accumulator -= step;
+			accumulator = std::max(accumulator - step, 0.0);
 		}
 	}
+	// Several physics steps can run between repaints. Compose their final state
+	// once, including sprite changes from controls while the game is paused.
+	render::update();
+	score::update(pb::MainTable->CurScoreStruct);
 	ImGui_ImplSDL2_NewFrame();
 	ImGui_Render_NewFrame();
 	ImGui::NewFrame();

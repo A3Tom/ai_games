@@ -14,5 +14,8 @@ the host page. It disables native restart/exit flows and file-based ImGui prefer
 The browser build and exported controls live separately in `../../engine/`.
 Native code paths remain available.
 
+The browser loop uses fixed 360 Hz simulation updates and display-synchronized
+rendering, composing the table once after each batch of physics updates.
+
 `THIRD_PARTY_NOTICES.txt` preserves the notices for vendored ImGui, SDL runtime libraries,
 the embedded font, and the Emscripten toolchain runtime used by the browser build.
