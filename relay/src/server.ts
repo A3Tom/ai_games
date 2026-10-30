@@ -4,6 +4,7 @@ import { WebSocketServer, WebSocket } from 'ws'
 
 import { RoomManager } from './room-manager.js'
 import { createHttpHandler } from './http-handler.js'
+import { Observability } from './observability.js'
 import { isIdentifier, isJoinMessage, isModernJoinMessage, isRecord } from './types.js'
 import type { RelayConfig, RelayStats } from './types.js'
 
@@ -30,6 +31,7 @@ export function createServer(config: RelayConfig, staticDir?: string): {
   httpServer: http.Server
   wss: WebSocketServer
   roomManager: RoomManager
+  observability: Observability
 } {
   const startedAt = Date.now()
   const counters = { messagesReceived: 0, messagesForwarded: 0, bytesReceived: 0, bytesSent: 0, rejectedMessages: 0 }
@@ -42,8 +44,10 @@ export function createServer(config: RelayConfig, staticDir?: string): {
     sendRaw(ws, JSON.stringify(message))
   }
 
-  const roomManager = new RoomManager(config, sendRaw)
-  const httpServer = http.createServer(createHttpHandler(() => roomManager.getStats(), staticDir))
+  const observability = new Observability(config.logLevel, stats)
+  const roomManager = new RoomManager(config, sendRaw, observability.log)
+  const httpServer = http.createServer(observability.wrap(createHttpHandler(() => roomManager.getStats(), staticDir)))
+  httpServer.once('close', () => { void observability.close() })
   const wss = new WebSocketServer({ server: httpServer, maxPayload: 64 * 1024 })
   const rateLimiters = new Map<WebSocket, RateLimiter>()
   const modernClients = new WeakSet<WebSocket>()
@@ -51,6 +55,7 @@ export function createServer(config: RelayConfig, staticDir?: string): {
 
   function reject(ws: WebSocket, code: string, message: string): void {
     counters.rejectedMessages++
+    observability.log('warn', 'message_rejected', { context: { code } })
     send(ws, { type: modernClients.has(ws) ? 'relay:error' : 'error', code, message })
   }
 
@@ -134,7 +139,7 @@ export function createServer(config: RelayConfig, staticDir?: string): {
     rateLimiters.set(ws, { count: 0, windowStart: Date.now() })
     alive.add(ws)
     ws.on('pong', () => alive.add(ws))
-    console.log(JSON.stringify({ event: 'client_connected', timestamp: new Date().toISOString() }))
+    observability.log('info', 'client_connected')
 
     ws.on('message', (data, isBinary) => {
       const rawMessage = data.toString()
@@ -202,31 +207,32 @@ export function createServer(config: RelayConfig, staticDir?: string): {
       rateLimiters.delete(ws)
       alive.delete(ws)
       roomManager.leave(ws, false)
-      console.log(JSON.stringify({ event: 'client_disconnected', timestamp: new Date().toISOString() }))
+      observability.log('info', 'client_disconnected')
     })
     ws.on('error', (error: Error) => {
-      console.log(JSON.stringify({ event: 'client_error', message: error.message, timestamp: new Date().toISOString() }))
+      observability.log('error', 'client_error', { message: error.message })
       rateLimiters.delete(ws)
       alive.delete(ws)
       roomManager.leave(ws, false)
     })
   })
 
-  return { httpServer, wss, roomManager }
+  return { httpServer, wss, roomManager, observability }
 }
 
 const isMainModule = process.argv[1] && (process.argv[1].endsWith('server.js') || process.argv[1].endsWith('server.ts'))
 
 if (isMainModule) {
   const config = loadConfig()
-  const { httpServer, wss } = createServer(config, process.env.STATIC_DIR)
+  const { httpServer, wss, observability } = createServer(config, process.env.STATIC_DIR)
   httpServer.listen(config.port, () => {
-    console.log(JSON.stringify({ event: 'server_started', port: config.port, timestamp: new Date().toISOString() }))
+    observability.log('info', 'server_started', { context: { port: config.port } })
   })
-  function handleShutdown(): void {
-    console.log(JSON.stringify({ event: 'server_stopped', timestamp: new Date().toISOString() }))
+  async function handleShutdown(): Promise<void> {
+    observability.log('info', 'server_stopped')
     wss.close()
     httpServer.close()
+    await observability.close()
     process.exit(0)
   }
   process.on('SIGTERM', handleShutdown)

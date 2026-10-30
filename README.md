@@ -64,6 +64,63 @@ The lab shows browser-to-relay round-trip latency, recent latency samples and mi
 
 The relay currently limits each connection to 60 messages per minute and each message to 4 KB. Automatic ping and stats requests use part of that allowance. This app exercises low-frequency multiplayer mechanisms; continuous movement would need a different traffic budget and synchronization design.
 
+## Observability
+
+The shared shell reports page loads, load duration, uncaught errors, failed resources, and unhandled promise rejections for every game. The browser sends small batches to the relay's `/telemetry` endpoint. Browser and relay logs use the same structured JSON format and appear together in `docker compose logs -f games` (or the relay terminal when running without Docker). Each entry includes `appId`, `source`, `level`, `event`, `timestamp`, `instance`, and `environment`.
+
+Prometheus metrics are available now at <http://localhost:14650/metrics> and `/relay/metrics`, without a metrics database. They include per-game page loads, load durations and log counts, relay rooms/connections/traffic, and telemetry forwarding failures/drops. Counters reset when the relay restarts. Browser logs are best effort: bounded queues have no disk spool, and unavailable backends can lose forwarded batches; the relay still writes JSON to stdout.
+
+To run the full local collection with searchable logs and stored metrics:
+
+```bash
+docker compose -f docker-compose.local.yml -f docker-compose.observability.yml up --build -d
+```
+
+Open a few games, then use:
+
+- [VictoriaLogs UI](http://localhost:9428/select/vmui/): query `service:="ai-games"`, optionally add `appId:="minesweeper"` or `level:="error"`.
+- [VictoriaMetrics UI](http://localhost:8428/vmui/): query `ai_games_page_loads_total`, `ai_games_browser_logs_total{level="error"}`, or `up{job="ai-games"}`. Scraping happens every 15 seconds.
+
+The optional overlay pins [VictoriaLogs v1.53.0](https://github.com/VictoriaMetrics/VictoriaLogs/releases/tag/v1.53.0) and [VictoriaMetrics v1.155.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.155.0). Their ports bind to localhost; named volumes preserve seven days of logs and fourteen days of metrics across container restarts. Use the same pair of `-f` arguments for `logs` and `down`; `down` keeps the volumes. To use the published game image, replace `docker-compose.local.yml` with `docker-compose.yml` and omit `--build`. Keep the [`observability/prometheus.yml`](./observability/prometheus.yml) file beside the manifests in its directory.
+
+Both base Compose files support these server settings through `.env`:
+
+| Setting | Default / purpose |
+| --- | --- |
+| `VICTORIALOGS_URL` | Empty: stdout only. Set the base URL of the server; the relay appends `/insert/jsonline`. The optional overlay supplies `http://victorialogs:9428`. |
+| `VICTORIALOGS_TOKEN` | Optional server-side bearer token for an authenticated logs endpoint. |
+| `INSTANCE_ID` | Hostname; set a stable name such as `games-vps-01` for each VPS. |
+| `OBSERVABILITY_ENVIRONMENT` | `development` locally, `production` in the published Compose file. |
+| `LOG_LEVEL` | `info`; also accepts `debug`, `warn`, and `error`. |
+| `TELEMETRY_ALLOWED_ORIGINS` | Empty: same-origin only. Comma-separated browser origins when collecting from a separately hosted site. |
+
+For a future VPS with existing Victoria services, run the base Compose file with `VICTORIALOGS_URL` pointing to its reachable logs service. Keep credentials on the relay. Add this target to the VPS's VictoriaMetrics [Prometheus scrape configuration](https://docs.victoriametrics.com/victoriametrics/single-server-victoriametrics/#how-to-scrape-prometheus-exporters-such-as-node-exporter), adjusting the address for its private network:
+
+```yaml
+scrape_configs:
+  - job_name: ai-games
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['127.0.0.1:14650'] # VictoriaMetrics running on the VPS host
+        labels:
+          instance: games-vps-01
+```
+
+VictoriaMetrics pulls metrics, so the game server needs no VictoriaMetrics URL. Within the same Compose network, use `games:14650` as in the supplied scrape file. Keep database and metrics access on the host or private network.
+
+Vite development servers proxy `/telemetry` to `http://127.0.0.1:14650`. Set `TELEMETRY_PROXY_TARGET=http://127.0.0.1:14651` when the relay uses a different host port. For Snow Drift without Docker, run `STATIC_DIR="$PWD" npm run dev --prefix relay` from the repository root and open <http://localhost:14650/snow_drift/>. This serves the source files and collector together.
+
+For static hosting such as GitHub Pages, add `<meta name="telemetry-endpoint" content="https://relay.example.com/telemetry">` to each page and allow its origin on the relay, or use `content="off"` to disable delivery. Browser code never receives Victoria credentials. Shared telemetry avoids recording invite URLs and game payloads automatically; do not put player details, room codes, or secrets in custom logs. To emit a game event from an inline module in a game's `index.html`:
+
+```js
+import { telemetry } from '../shared/telemetry.js'
+
+telemetry.info('game_started', 'New game started', { difficulty: 'easy' })
+// Also: debug, warn, error, and captureError(event, error, context?).
+```
+
+Use the same `game-id` as the game's catalogue entry. The shell initializes telemetry once, so new games inherit the automatic reporting.
+
 ## Shared multiplayer client
 
 [`packages/multiplayer`](./packages/multiplayer) contains a TypeScript client without a UI-framework dependency. The lab depends on it through a local package reference. Future games can use the same connection lifecycle, room membership, ready state, messaging, and live metrics without copying the lab UI. This example assumes the game is served from the Compose collection:
@@ -112,7 +169,7 @@ The games share a page header and footer through [`shared/game-shell.js`](./shar
 Wrap the game's mount point in the shared shell in its `index.html`:
 
 ```html
-<game-shell page-title="My Game" home-href="../">
+<game-shell game-id="my-game" page-title="My Game" home-href="../">
   <div id="app"></div>
 </game-shell>
 <script type="module">import '../shared/game-shell.js'</script>

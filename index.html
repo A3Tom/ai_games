@@ -27,7 +27,7 @@
     </style>
 </head>
 <body>
-    <game-shell home-href="./">
+    <game-shell game-id="collection" home-href="./">
     <div class="container">
         <div>
             <span class="eyebrow">SMALL IDEAS. PLAYABLE EXPERIMENTS.</span>
@@ -41,6 +41,7 @@
     </game-shell>
     <script type="module" src="./shared/game-shell.js"></script>
     <script type="module">
+        import { telemetry } from './shared/telemetry.js'
         const element = (tag, text, className) => {
             const node = document.createElement(tag)
             if (text) node.textContent = text
@@ -65,7 +66,7 @@
             document.querySelector('#games').replaceChildren(...cards)
         } catch (error) {
             document.querySelector('#load-error').hidden = false
-            console.error(error)
+            telemetry.captureError('collection_load_failed', error)
         }
     </script>
 </body>

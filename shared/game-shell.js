@@ -1,3 +1,5 @@
+import { initializeTelemetry } from './telemetry.js'
+
 // Shared page chrome for every game, independent of its UI framework.
 class GameShell extends HTMLElement {
   constructor() {
@@ -75,6 +77,7 @@ class GameShell extends HTMLElement {
   }
 
   connectedCallback() {
+    initializeTelemetry(this.getAttribute('game-id'))
     const home = this.getAttribute('home-href') || '../'
     this.shadowRoot.querySelector('.brand').setAttribute('href', home)
     this.shadowRoot.querySelector('.home').setAttribute('href', home)

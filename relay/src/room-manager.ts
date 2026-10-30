@@ -1,6 +1,8 @@
 import WebSocket from 'ws'
 
 import type { ModernJoinMessage, Player, RoomSnapshot } from './types.js'
+import { consoleLogger } from './observability.js'
+import type { Logger } from './observability.js'
 
 interface Room {
   key: string
@@ -26,6 +28,7 @@ export class RoomManager {
   constructor(
     private readonly config: RoomConfig,
     private readonly sendMessage: (client: WebSocket, message: string) => void = (client, message) => client.send(message),
+    private readonly logger: Logger = consoleLogger,
   ) {}
 
   join(roomId: string, client: WebSocket): JoinResult {
@@ -216,6 +219,8 @@ export class RoomManager {
   }
 
   private log(event: string, room: Room): void {
-    console.log(JSON.stringify({ event, appId: room.appId, roomId: room.id, peerCount: room.clients.size, timestamp: new Date().toISOString() }))
+    // The lab's existing wire namespace predates its catalogue ID.
+    const appId = room.appId === 'multiplayer-lab' ? 'playground' : room.appId ?? 'sea-strike'
+    this.logger('info', event, { appId, context: { peerCount: room.clients.size } })
   }
 }

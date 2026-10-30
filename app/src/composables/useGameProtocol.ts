@@ -1,5 +1,6 @@
 import { watch } from 'vue'
 import { storeToRefs } from 'pinia'
+import { telemetry } from '../../../shared/telemetry.js'
 
 import type { PlacedShip, ShipType, Shot } from '../types/game'
 import type {
@@ -139,7 +140,7 @@ export function useGameProtocol(options: UseGameProtocolOptions): UseGameProtoco
 
     if (!isHashValid) {
       gameStore.setCheatDetected(true)
-      console.warn('Cheat detected: board commitment hash mismatch')
+      telemetry.warn('board_verification_failed', 'Board commitment hash mismatch')
     }
 
     const localPlayerRole: 'a' | 'b' = connectionStore.isHost ? 'a' : 'b'
@@ -151,7 +152,7 @@ export function useGameProtocol(options: UseGameProtocolOptions): UseGameProtoco
 
     if (!isShotHonest) {
       gameStore.setCheatDetected(true)
-      console.warn('Cheat detected: dishonest shot results')
+      telemetry.warn('shot_verification_failed', 'Revealed board disagrees with shot results')
     }
 
     const winner: 'me' | 'opponent' = localSunkCount >= 5 ? 'opponent' : 'me'
@@ -289,7 +290,10 @@ export function useGameProtocol(options: UseGameProtocolOptions): UseGameProtoco
   function handleIncomingMessage(message: GameMessage): void {
     const validPhases = VALID_PHASES_FOR_MESSAGE[message.type]
     if (!validPhases || !validPhases.includes(gameStore.phase)) {
-      console.warn(`Ignoring '${message.type}' message in '${gameStore.phase}' phase`)
+      telemetry.warn('message_wrong_phase', 'Ignoring a message in the current game phase', {
+        messageType: message.type,
+        phase: gameStore.phase,
+      })
       return
     }
 
@@ -326,7 +330,8 @@ export function useGameProtocol(options: UseGameProtocolOptions): UseGameProtoco
         break
       default: {
         const _exhaustive: never = message
-        console.warn('Unrecognized message type:', _exhaustive)
+        void _exhaustive
+        telemetry.warn('unrecognized_game_message', 'Received an unrecognized game message type')
       }
     }
   }

@@ -1,3 +1,4 @@
+import { telemetry } from '../../../shared/telemetry.js'
 import { isIdentifier, MAX_FRAME_BYTES, parseServerMessage } from './protocol'
 import type {
   ClientState, LogEntry, MultiplayerClient, MultiplayerOptions, ServerMessage,
@@ -75,7 +76,7 @@ export function createMultiplayerClient(options: MultiplayerOptions): Multiplaye
       try {
         listener(state)
       } catch (error: unknown) {
-        console.error('Multiplayer state listener failed:', error)
+        telemetry.captureError('multiplayer_listener_error', error)
       }
     }
   }
@@ -84,6 +85,10 @@ export function createMultiplayerClient(options: MultiplayerOptions): Multiplaye
     direction: LogEntry['direction'], type: string, detail: string,
     payload?: unknown, patch: Partial<ClientState> = {},
   ): void {
+    if (direction === 'system') {
+      const level = type === 'client:error' || type === 'client:ping_timeout' ? 'warn' : 'info'
+      telemetry[level](type.replace(':', '_'), detail)
+    }
     const entry: LogEntry = {
       id: `event-${++eventSequence}`, at: Date.now(), direction, type, detail, payload,
     }
@@ -210,6 +215,7 @@ export function createMultiplayerClient(options: MultiplayerOptions): Multiplaye
       }
       case 'relay:stats': patch = { server: message.stats }; break
       case 'relay:error':
+        telemetry.warn('relay_error', message.message, { code: message.code })
         patch = { lastError: `${message.code}: ${message.message}` }
         if (pendingJoin !== null || leavePending) {
           desiredRoom = confirmedRoom

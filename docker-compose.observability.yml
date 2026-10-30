@@ -1,0 +1,33 @@
+# Optional local backends; combine with docker-compose.local.yml or docker-compose.yml.
+services:
+  games:
+    environment:
+      VICTORIALOGS_URL: "${VICTORIALOGS_URL:-http://victorialogs:9428}"
+
+  victorialogs:
+    image: victoriametrics/victoria-logs:v1.53.0
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9428:9428"
+    command:
+      - "-storageDataPath=/storage"
+      - "-retentionPeriod=7d"
+    volumes:
+      - victorialogs-data:/storage
+
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:v1.155.0
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8428:8428"
+    command:
+      - "-storageDataPath=/storage"
+      - "-retentionPeriod=14d"
+      - "-promscrape.config=/etc/prometheus.yml"
+    volumes:
+      - victoriametrics-data:/storage
+      - ./observability/prometheus.yml:/etc/prometheus.yml:ro
+
+volumes:
+  victorialogs-data:
+  victoriametrics-data:

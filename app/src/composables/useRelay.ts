@@ -1,5 +1,6 @@
 import { ref, onScopeDispose } from 'vue'
 import type { Ref } from 'vue'
+import { telemetry } from '../../../shared/telemetry.js'
 
 import type { GameMessage } from '../types/protocol'
 
@@ -94,8 +95,8 @@ export function useRelay(options: UseRelayOptions): UseRelayReturn {
     scheduleReconnect()
   }
 
-  function handleError(event: Event): void {
-    console.warn('WebSocket error:', event)
+  function handleError(): void {
+    telemetry.warn('relay_connection_error', 'WebSocket connection failed')
   }
 
   function handleMessage(event: MessageEvent): void {
@@ -103,7 +104,7 @@ export function useRelay(options: UseRelayOptions): UseRelayReturn {
     const parsed = parseIncomingMessage(raw)
 
     if (parsed === null) {
-      console.warn('Received invalid message:', raw)
+      telemetry.warn('relay_invalid_message', 'Received an invalid relay message')
       return
     }
 
@@ -124,14 +125,14 @@ export function useRelay(options: UseRelayOptions): UseRelayReturn {
     }
 
     if (isRelayErrorMessage(parsed)) {
-      console.warn('Relay error:', parsed.code, parsed.message)
+      telemetry.warn('relay_error', parsed.message, { code: parsed.code })
       return
     }
 
     try {
       options.onGameMessage(parsed as GameMessage)
     } catch (error: unknown) {
-      console.error('Error in onGameMessage handler:', error)
+      telemetry.captureError('game_message_error', error)
     }
   }
 
@@ -157,7 +158,7 @@ export function useRelay(options: UseRelayOptions): UseRelayReturn {
 
   function send(message: GameMessage): void {
     if (!connected.value) {
-      console.warn('Cannot send: WebSocket not connected')
+      telemetry.warn('relay_send_unavailable', 'Cannot send while WebSocket is disconnected')
       return
     }
     ws.send(JSON.stringify(message))

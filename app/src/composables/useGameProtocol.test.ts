@@ -245,6 +245,7 @@ describe('useGameProtocol', () => {
 
       expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining('Ignoring'),
+        { messageType: 'shot', phase: 'setup' },
       )
       warnSpy.mockRestore()
     })
@@ -265,6 +266,7 @@ describe('useGameProtocol', () => {
 
       expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining('Ignoring'),
+        { messageType: 'ready', phase: 'battle' },
       )
       warnSpy.mockRestore()
     })

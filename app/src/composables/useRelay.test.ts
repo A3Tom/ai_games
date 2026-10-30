@@ -162,7 +162,8 @@ describe('useRelay — Ticket 001: Connection Lifecycle', () => {
     // Not connected yet (no simulateOpen)
     send({ type: 'ready' })
     expect(console.warn).toHaveBeenCalledWith(
-      'Cannot send: WebSocket not connected',
+      '[game] relay_send_unavailable: Cannot send while WebSocket is disconnected',
+      {},
     )
     // send is called once for the attempt, but ws.send should not have been called
     expect(getLatestWs().send).not.toHaveBeenCalled()
@@ -203,12 +204,12 @@ describe('useRelay — Ticket 001: Connection Lifecycle', () => {
     expect(connected.value).toBe(false)
   })
 
-  it('logs WebSocket error via console.warn', () => {
+  it('logs a WebSocket error through the shared logger', () => {
     useRelay(createOptions())
     getLatestWs().simulateError()
     expect(console.warn).toHaveBeenCalledWith(
-      'WebSocket error:',
-      expect.any(Event),
+      '[game] relay_connection_error: WebSocket connection failed',
+      {},
     )
   })
 
@@ -267,7 +268,7 @@ describe('useRelay — Ticket 002: Message Dispatch', () => {
     getLatestWs().simulateMessage(
       JSON.stringify({ type: 'error', code: 'ROOM_FULL', message: 'Room is full' }),
     )
-    expect(console.warn).toHaveBeenCalledWith('Relay error:', 'ROOM_FULL', 'Room is full')
+    expect(console.warn).toHaveBeenCalledWith('[game] relay_error: Room is full', { code: 'ROOM_FULL' })
     expect(onGameMessage).not.toHaveBeenCalled()
   })
 
@@ -292,7 +293,7 @@ describe('useRelay — Ticket 002: Message Dispatch', () => {
     useRelay(createOptions({ onGameMessage }))
     getLatestWs().simulateOpen()
     getLatestWs().simulateMessage('not json')
-    expect(console.warn).toHaveBeenCalledWith('Received invalid message:', 'not json')
+    expect(console.warn).toHaveBeenCalledWith('[game] relay_invalid_message: Received an invalid relay message', {})
     expect(onGameMessage).not.toHaveBeenCalled()
   })
 
@@ -302,8 +303,8 @@ describe('useRelay — Ticket 002: Message Dispatch', () => {
     getLatestWs().simulateOpen()
     getLatestWs().simulateMessage(JSON.stringify({ type: 'unknown_type' }))
     expect(console.warn).toHaveBeenCalledWith(
-      'Received invalid message:',
-      JSON.stringify({ type: 'unknown_type' }),
+      '[game] relay_invalid_message: Received an invalid relay message',
+      {},
     )
     expect(onGameMessage).not.toHaveBeenCalled()
   })
@@ -316,8 +317,8 @@ describe('useRelay — Ticket 002: Message Dispatch', () => {
     getLatestWs().simulateOpen()
     getLatestWs().simulateMessage(JSON.stringify({ type: 'ready' }))
     expect(console.error).toHaveBeenCalledWith(
-      'Error in onGameMessage handler:',
-      expect.any(Error),
+      '[game] game_message_error: handler crash',
+      {},
     )
   })
 })

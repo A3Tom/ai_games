@@ -28,6 +28,8 @@ jobs:
         run: |
           docker compose config --quiet
           docker compose -f docker-compose.local.yml config --quiet
+          docker compose -f docker-compose.yml -f docker-compose.observability.yml config --quiet
+          docker compose -f docker-compose.local.yml -f docker-compose.observability.yml config --quiet
 
       - name: Set image name
         id: image

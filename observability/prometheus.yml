@@ -1,0 +1,9 @@
+global:
+  scrape_interval: 15s
+  scrape_timeout: 5s
+
+scrape_configs:
+  - job_name: ai-games
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['games:14650']

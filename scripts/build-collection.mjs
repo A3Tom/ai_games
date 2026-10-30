@@ -17,7 +17,7 @@ const ids = new Set()
 const routes = new Set()
 if (!Array.isArray(games) || games.length === 0) throw new Error('games.json must list at least one game')
 for (const game of games) {
-  if (!segment.test(game.id) || !segment.test(game.path) || !segment.test(game.source) ||
+  if (!/^[a-z0-9][a-z0-9_-]{0,63}$/.test(game.id) || !segment.test(game.path) || !segment.test(game.source) ||
       typeof game.title !== 'string' || typeof game.description !== 'string' ||
       typeof game.icon !== 'string' || !Array.isArray(game.tags) ||
       !game.tags.every((tag) => typeof tag === 'string') || typeof game.build !== 'boolean') {
@@ -31,7 +31,7 @@ for (const game of games) {
 // Never replace source directories if the output argument is mistyped.
 const protectedPaths = [root, ...games.map((game) => path.join(root, game.source)),
   path.join(root, 'packages'), path.join(root, 'relay'), path.join(root, 'scripts'), path.join(root, 'shared'),
-  path.join(root, 'docker'), path.join(root, 'docs'), path.join(root, '.git')]
+  path.join(root, 'docker'), path.join(root, 'observability'), path.join(root, 'docs'), path.join(root, '.git')]
 if (output === path.parse(output).root ||
     protectedPaths.some((source) => source === output || source.startsWith(output + path.sep)) ||
     protectedPaths.slice(1).some((source) => output.startsWith(source + path.sep))) {
