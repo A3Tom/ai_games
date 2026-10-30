@@ -9,10 +9,12 @@ Every app, including **Multiplayer Lab**, is listed on one dashboard. One Docker
 After the [GHCR workflow](./.github/workflows/ghcr.yml) has published the image, run this command on any Linux AMD64 host with Docker (see [Hosting](#hosting) for registry authentication):
 
 ```bash
-docker run -d --name ai-games --restart unless-stopped --pull always -p 14650:14650 ghcr.io/a3tom/ai_games:latest
+docker run -d --name ai-games --restart unless-stopped --pull always -p 14650:14650 -v ai-games-data:/data ghcr.io/a3tom/ai_games:latest
 ```
 
-Open <http://localhost:14650>. The dashboard links to Multiplayer Lab, Dots & Boxes, Minesweeper, Snow Drift, and Sea Strike. No local Node installation or separate Vite process is needed.
+Open <http://localhost:14650>. The dashboard links to Multiplayer Lab, Dots & Boxes, Minesweeper, Snow Drift, Space Cadet Pinball, and Sea Strike. No local Node installation or separate Vite process is needed.
+
+Space Cadet Pinball runs the C++/SDL2 [SpaceCadetPinball engine](./pinball/vendor/) through WebAssembly and saves its top ten scores on the server. Builds download and verify the same game resource archive used by the Flatpak package, so the hosted game is ready to play. Resources stay outside Git; see the [pinball setup guide](./pinball/README.md) for provenance, custom resources, and builds without bundled data. The `ai-games-data` volume above preserves scores when the container is replaced. Compose configures its own named `pinball-data` volume; `docker compose down` keeps it, while `docker compose down -v` deletes it. Without a volume, scores survive a process restart but disappear when the container is removed. Scores are reported by the browser for casual play.
 
 To share it with another device on your network, open `http://<your-computer-LAN-IP>:14650` on that device, for example `http://192.168.1.20:14650`. On Linux, `hostname -I` lists your machine's addresses; choose the one for your Ethernet or Wi-Fi network. On Windows, use `ipconfig`; on macOS, look in Network settings.
 
@@ -93,6 +95,9 @@ Both base Compose files support these server settings through `.env`:
 | `OBSERVABILITY_ENVIRONMENT` | `development` locally, `production` in the published Compose file. |
 | `LOG_LEVEL` | `info`; also accepts `debug`, `warn`, and `error`. |
 | `TELEMETRY_ALLOWED_ORIGINS` | Empty: same-origin only. Comma-separated browser origins when collecting from a separately hosted site. |
+| `PINBALL_ALLOWED_ORIGINS` | Empty: same-origin only. Comma-separated browser origins allowed to use the pinball API when the game is hosted separately. |
+
+The Docker image sets `PINBALL_SCORES_FILE=/data/pinball-scores.json`, backed by the Compose volume. When running the relay directly, the default is `./data/pinball-scores.json` relative to its working directory; set `PINBALL_SCORES_FILE` to another writable file when needed. Keep this data with a single relay instance; it is a file-backed leaderboard rather than a shared database.
 
 For a future VPS with existing Victoria services, run the base Compose file with `VICTORIALOGS_URL` pointing to its reachable logs service. Keep credentials on the relay. Add this target to the VPS's VictoriaMetrics [Prometheus scrape configuration](https://docs.victoriametrics.com/victoriametrics/single-server-victoriametrics/#how-to-scrape-prometheus-exporters-such-as-node-exporter), adjusting the address for its private network:
 
@@ -155,6 +160,7 @@ After the subscription reports a room, send game actions with `client.send({ act
 | Dots & Boxes | [`dots-and-boxes/`](./dots-and-boxes) | Vue, TypeScript, Vite; 2–4 players online or pass-and-play |
 | Minesweeper | [`minesweeper/`](./minesweeper) | React, TypeScript, Vite |
 | Snow Drift | [`snow_drift/`](./snow_drift) | JavaScript, browser rendering |
+| Space Cadet Pinball | [`pinball/`](./pinball) | C++/SDL2 compiled with Emscripten to WebAssembly; TypeScript wrapper and server leaderboard |
 | Sea Strike | [`app/`](./app) | Vue, TypeScript, Vite; existing Battleship implementation |
 
 The games share a page header and footer through [`shared/game-shell.js`](./shared/game-shell.js), a small browser component that works with Vue, React, or plain JavaScript. Each game owns the content inside it. Sea Strike's design documents under `docs/01-*` through `docs/05-*`, phases, and tickets describe that game specifically.
@@ -188,6 +194,8 @@ node scripts/build-collection.mjs --install --build
 
 This writes `deploy/`. With dependencies installed, omit `--install`; with app builds already present, omit both flags to package them. Adding a catalogue entry includes the game in both hosting paths without editing the dashboard or Dockerfile.
 
+Pinball also requires Emscripten 4.0.23 to compile its C++ engine when generated artifacts are absent or out of date. Docker and the Pages workflow provide this toolchain; for direct local builds, activate an [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html) installation before running the collection script. Builds also download and checksum-verify game resources unless a valid imported bundle exists or `PINBALL_SKIP_RESOURCE_DOWNLOAD=1` is set. See [`pinball/README.md`](./pinball/README.md) for game data and engine build instructions.
+
 ## Hosting
 
 ### Pull and run from GHCR
@@ -204,6 +212,8 @@ docker login ghcr.io
 ```
 
 Use the `docker run` command above to pull and start the image without a source checkout or Compose file. To replace an existing container with a new image version, stop and remove it with `docker stop ai-games` and `docker rm ai-games`, then repeat the run command. Rooms and relay counters are ephemeral and reset on replacement.
+
+Reuse the same `ai-games-data` volume when replacing the container to retain pinball scores. Back up the score file or volume before removing it.
 
 Alternatively, copy [`docker-compose.yml`](./docker-compose.yml) to a directory on any Linux AMD64 host with Docker Compose. After the image has been published, run from that directory:
 
@@ -231,6 +241,8 @@ The collection is configured for <https://a3tom.github.io/ai_games/>; the lab's 
 
 Pages hosts static files, so deploy the relay separately as a long-running WebSocket service. Set the GitHub repository Actions variable `VITE_RELAY_URL` to its `wss://` endpoint before building; this configures all multiplayer apps. Alternatively, enter the endpoint in the lab or Dots & Boxes. No relay is provisioned by the Pages workflow.
 
+For pinball scores on Pages, set the Actions variable `VITE_PINBALL_API_URL` to the relay's HTTPS API base, such as `https://relay.example.com/api/pinball`, and set the relay's `PINBALL_ALLOWED_ORIGINS=https://a3tom.github.io`. An origin has no path, so omit `/ai_games/` from that allowlist. Rebuild the collection after changing the frontend variable. The reverse proxy must forward `/api/pinball/*` to the relay. An unavailable score API does not prevent playing. The Pages workflow compiles the engine with Emscripten 4.0.23 and downloads verified game resources by default. Set the Actions variable `PINBALL_SKIP_RESOURCE_DOWNLOAD=1` for a deployment where visitors select their own resource folder.
+
 For HTTPS hosting of the container, place your TLS reverse proxy in front of port 14650 and pass WebSocket upgrades. The browser automatically selects `wss://` on HTTPS pages.
 
 ## Local development and checks
@@ -256,6 +268,12 @@ npm test --prefix packages/multiplayer
 npm run type-check --prefix packages/multiplayer
 
 npm run build --prefix playground
+
+npm ci --prefix pinball
+npm test --prefix pinball
+npm run build --prefix pinball
 ```
+
+For pinball hot reload, activate Emscripten 4.0.23, build the engine, and run `npm run dev --prefix pinball` alongside the relay. Its Vite server proxies `/api` and `/telemetry` to port 14650; see [`pinball/README.md`](./pinball/README.md) for engine builds, game resources, API configuration, and storage details.
 
 To work on the older games, run `npm ci` and `npm run dev` inside `minesweeper/` or `app/`. For Snow Drift, serve the repository root with a local HTTP server and open `/snow_drift/`.

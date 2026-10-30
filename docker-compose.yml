@@ -15,3 +15,10 @@ services:
       VICTORIALOGS_URL: "${VICTORIALOGS_URL:-}"
       VICTORIALOGS_TOKEN: "${VICTORIALOGS_TOKEN:-}"
       TELEMETRY_ALLOWED_ORIGINS: "${TELEMETRY_ALLOWED_ORIGINS:-}"
+      PINBALL_SCORES_FILE: /data/pinball-scores.json
+      PINBALL_ALLOWED_ORIGINS: "${PINBALL_ALLOWED_ORIGINS:-}"
+    volumes:
+      - pinball-data:/data
+
+volumes:
+  pinball-data:

@@ -12,4 +12,8 @@ deploy
 coverage
 **/coverage
 npm-debug.log*
+/data
+/relay/data
+/pinball/public/engine
+/pinball/.engine-build
 **/npm-debug.log*

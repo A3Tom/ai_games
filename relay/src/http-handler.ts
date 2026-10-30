@@ -3,21 +3,26 @@ import http from 'node:http'
 import serveStatic from 'serve-static'
 
 import { createHealthHandler } from './health.js'
+import { createPinballHandler } from './pinball-scores.js'
 
 export function createHttpHandler(
   getStats: () => { rooms: number; connections: number },
   staticDir?: string,
 ): http.RequestListener {
   const health = createHealthHandler(getStats)
-  if (!staticDir) return health
-
-  const files = serveStatic(staticDir, { dotfiles: 'deny', fallthrough: false })
+  const pinball = createPinballHandler()
+  const files = staticDir ? serveStatic(staticDir, { dotfiles: 'deny', fallthrough: false }) : undefined
   return (req, res): void => {
+    if (req.url?.split('?')[0]?.startsWith('/api/pinball/')) {
+      pinball(req, res)
+      return
+    }
     if (req.url === '/health' || req.url === '/relay/health') {
       health(req, res)
       return
     }
 
+    if (!files) { health(req, res); return }
     files(req, res, (error: unknown): void => {
       if (!error) {
         health(req, res)

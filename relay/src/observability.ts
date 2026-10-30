@@ -132,6 +132,7 @@ export class Observability {
     return (req, res) => {
       const path = req.url?.split('?')[0]
       const route = path === '/telemetry' ? 'telemetry' :
+        path?.startsWith('/api/pinball/') ? 'pinball' :
         path === '/metrics' || path === '/relay/metrics' ? 'metrics' :
           path === '/health' || path === '/relay/health' ? 'health' : 'static'
       const started = performance.now()

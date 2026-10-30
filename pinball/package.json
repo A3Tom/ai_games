@@ -1,0 +1,21 @@
+{
+  "name": "space-cadet-pinball",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/build-engine.mjs && node scripts/fetch-resources.mjs && vite --host 0.0.0.0",
+    "build": "node scripts/build-engine.mjs && node scripts/fetch-resources.mjs && tsc --noEmit && vite build",
+    "build:engine": "node scripts/build-engine.mjs",
+    "resources:fetch": "node scripts/fetch-resources.mjs",
+    "resources:import": "node scripts/import-resources.mjs",
+    "preview": "vite preview",
+    "test": "vitest run && node --test scripts/*.test.mjs"
+  },
+  "devDependencies": {
+    "fflate": "^0.8.3",
+    "typescript": "^5.7.3",
+    "vite": "^6.4.1",
+    "vitest": "^3.2.4"
+  }
+}

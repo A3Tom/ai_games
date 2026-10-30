@@ -40,6 +40,16 @@
     "build": false
   },
   {
+    "id": "pinball",
+    "title": "Space Cadet Pinball",
+    "description": "Play the original Space Cadet table in your browser, complete missions, and chase the server high score.",
+    "icon": "🪐",
+    "tags": ["Solo", "WebAssembly", "High scores"],
+    "path": "pinball",
+    "source": "pinball",
+    "build": true
+  },
+  {
     "id": "sea-strike",
     "title": "Sea Strike",
     "description": "Place your fleet and challenge a friend in a browser-based Battleship prototype.",

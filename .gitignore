@@ -3,3 +3,8 @@
 **.tsbuildinfo
 **/.env
 /deploy/
+/data/
+/relay/data/
+/pinball/public/engine/
+/pinball/public/game-data/
+/pinball/.engine-build/
