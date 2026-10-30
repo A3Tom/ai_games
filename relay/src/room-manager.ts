@@ -1,194 +1,221 @@
 import WebSocket from 'ws'
 
-import type { PeerCountMessage, PeerLeftMessage } from './types.js'
+import type { ModernJoinMessage, Player, RoomSnapshot } from './types.js'
 
 interface Room {
+  key: string
   id: string
+  appId: string | null
   clients: Set<WebSocket>
-  createdAt: number
-  lastActivityAt: number
+  players: Map<WebSocket, Player>
   timeoutHandle: ReturnType<typeof setTimeout>
 }
 
-export class RoomManager {
-  private rooms: Map<string, Room> = new Map()
-  private clientRoomMap: Map<WebSocket, string> = new Map()
-  private readonly maxRooms: number
-  private readonly maxClientsPerRoom: number
-  private readonly roomTimeoutMs: number
+interface RoomConfig {
+  maxRooms: number
+  maxClientsPerRoom: number
+  roomTimeoutMs: number
+}
 
-  constructor(config: {
-    maxRooms: number
-    maxClientsPerRoom: number
-    roomTimeoutMs: number
-  }) {
-    this.maxRooms = config.maxRooms
-    this.maxClientsPerRoom = config.maxClientsPerRoom
-    this.roomTimeoutMs = config.roomTimeoutMs
+type JoinResult = { success: boolean; error?: string }
+
+export class RoomManager {
+  private readonly rooms = new Map<string, Room>()
+  private readonly clientRoomMap = new Map<WebSocket, string>()
+
+  constructor(
+    private readonly config: RoomConfig,
+    private readonly sendMessage: (client: WebSocket, message: string) => void = (client, message) => client.send(message),
+  ) {}
+
+  join(roomId: string, client: WebSocket): JoinResult {
+    return this.joinRoom(JSON.stringify(['legacy', roomId]), roomId, null, client)
   }
 
-  join(roomId: string, client: WebSocket): { success: boolean; error?: string } {
-    let room = this.rooms.get(roomId)
+  joinModern(message: ModernJoinMessage, client: WebSocket): JoinResult {
+    return this.joinRoom(JSON.stringify(['modern', message.appId, message.roomId]), message.roomId, message.appId, client, {
+      id: message.playerId,
+      name: message.name.trim(),
+      ready: false,
+      joinedAt: Date.now(),
+    })
+  }
 
-    if (room && room.clients.size >= this.maxClientsPerRoom) {
+  private joinRoom(key: string, roomId: string, appId: string | null, client: WebSocket, player?: Player): JoinResult {
+    let room = this.rooms.get(key)
+    const current = this.getClientRoom(client)
+
+    if (room?.clients.has(client)) {
+      if (player && room.players.get(client)?.id !== player.id) {
+        return { success: false, error: 'PLAYER_ID_MISMATCH' }
+      }
+      const existingPlayer = room.players.get(client)
+      if (player && existingPlayer) existingPlayer.name = player.name
+      this.touch(room)
+      this.notifyRoom(room)
+      return { success: true }
+    }
+    // Legacy Sea Strike assumes exactly two roles even when modern rooms allow
+    // a larger party. Keep that constraint while honoring a lower configured cap.
+    const capacity = appId === null ? Math.min(this.config.maxClientsPerRoom, 2) : this.config.maxClientsPerRoom
+    if (room && room.clients.size >= capacity) {
       return { success: false, error: 'ROOM_FULL' }
     }
+    if (room && player && [...room.players.values()].some((member) => member.id === player.id)) {
+      return { success: false, error: 'PLAYER_EXISTS' }
+    }
+    // Moving the last player out of a room frees a slot for the target.
+    const freedRoom = current?.clients.size === 1 ? 1 : 0
+    if (!room && this.rooms.size - freedRoom >= this.config.maxRooms) {
+      return { success: false, error: 'ROOM_LIMIT' }
+    }
+
+    // Validate the target before changing membership so failed switches are safe.
+    if (current) this.leave(client, false)
 
     if (!room) {
-      if (this.rooms.size >= this.maxRooms) {
-        return { success: false, error: 'ROOM_FULL' }
-      }
-
-      const now = Date.now()
       room = {
+        key,
         id: roomId,
+        appId,
         clients: new Set(),
-        createdAt: now,
-        lastActivityAt: now,
-        timeoutHandle: this.startTimeout(roomId),
+        players: new Map(),
+        timeoutHandle: this.startTimeout(key),
       }
-      this.rooms.set(roomId, room)
-
-      console.log(
-        JSON.stringify({
-          event: 'room_created',
-          roomId,
-          timestamp: new Date().toISOString(),
-        })
-      )
+      this.rooms.set(key, room)
+      this.log('room_created', room)
     }
-
     room.clients.add(client)
-    this.clientRoomMap.set(client, roomId)
-    this.resetTimeout(room)
-
-    const peerCountMsg: PeerCountMessage = {
-      type: 'peer_count',
-      count: room.clients.size,
-    }
-    const msgStr = JSON.stringify(peerCountMsg)
-
-    for (const c of room.clients) {
-      if (c.readyState === WebSocket.OPEN) {
-        c.send(msgStr)
-      }
-    }
-
-    console.log(
-      JSON.stringify({
-        event: 'peer_joined',
-        roomId,
-        peerCount: room.clients.size,
-        timestamp: new Date().toISOString(),
-      })
-    )
-
+    if (player) room.players.set(client, player)
+    this.clientRoomMap.set(client, key)
+    this.touch(room)
+    this.notifyRoom(room)
+    this.log('peer_joined', room)
     return { success: true }
   }
 
-  leave(client: WebSocket): void {
-    const roomId = this.clientRoomMap.get(client)
-    if (!roomId) return
-
-    const room = this.rooms.get(roomId)
+  leave(client: WebSocket, notifySelf = true): void {
+    const room = this.getClientRoom(client)
+    this.clientRoomMap.delete(client)
     if (!room) {
-      this.clientRoomMap.delete(client)
+      if (notifySelf) this.send(client, { type: 'relay:room', room: null })
       return
     }
 
     room.clients.delete(client)
-    this.clientRoomMap.delete(client)
+    room.players.delete(client)
+    if (notifySelf && room.appId !== null) this.send(client, { type: 'relay:room', room: null })
 
     if (room.clients.size === 0) {
       clearTimeout(room.timeoutHandle)
-      this.rooms.delete(roomId)
-
-      console.log(
-        JSON.stringify({
-          event: 'room_deleted',
-          roomId,
-          timestamp: new Date().toISOString(),
-        })
-      )
+      this.rooms.delete(room.key)
+      this.log('room_deleted', room)
     } else {
-      const peerLeftMsg: PeerLeftMessage = { type: 'peer_left' }
-      const msgStr = JSON.stringify(peerLeftMsg)
-
-      for (const c of room.clients) {
-        if (c.readyState === WebSocket.OPEN) {
-          c.send(msgStr)
-        }
+      if (room.appId === null) {
+        for (const peer of room.clients) this.send(peer, { type: 'peer_left' })
+      } else {
+        this.notifyRoom(room)
       }
-
-      room.lastActivityAt = Date.now()
-      this.resetTimeout(room)
-
-      console.log(
-        JSON.stringify({
-          event: 'peer_left',
-          roomId,
-          peerCount: room.clients.size,
-          timestamp: new Date().toISOString(),
-        })
-      )
+      this.touch(room)
+      this.log('peer_left', room)
     }
   }
 
-  broadcast(sender: WebSocket, message: string): void {
-    const roomId = this.clientRoomMap.get(sender)
-    if (!roomId) return
+  isModernClient(client: WebSocket): boolean {
+    return this.getClientRoom(client)?.appId != null
+  }
 
-    const room = this.rooms.get(roomId)
-    if (!room) return
+  setReady(client: WebSocket, ready: boolean): boolean {
+    const room = this.getClientRoom(client)
+    const player = room?.players.get(client)
+    if (!room || !player) return false
+    player.ready = ready
+    this.touch(room)
+    this.notifyRoom(room)
+    return true
+  }
 
-    room.lastActivityAt = Date.now()
-    this.resetTimeout(room)
+  broadcastModern(sender: WebSocket, messageId: string, payload: unknown): number | null {
+    const room = this.getClientRoom(sender)
+    const player = room?.players.get(sender)
+    if (!room || !player) return null
+    return this.broadcast(sender, JSON.stringify({
+      type: 'relay:message',
+      appId: room.appId,
+      roomId: room.id,
+      senderId: player.id,
+      messageId,
+      payload,
+    }))
+  }
 
-    for (const c of room.clients) {
-      if (c !== sender && c.readyState === WebSocket.OPEN) {
-        c.send(message)
+  broadcast(sender: WebSocket, message: string): number {
+    const room = this.getClientRoom(sender)
+    if (!room) return 0
+    this.touch(room)
+    let recipients = 0
+    for (const client of room.clients) {
+      if (client !== sender && client.readyState === WebSocket.OPEN) {
+        this.sendMessage(client, message)
+        recipients++
       }
     }
+    return recipients
   }
 
   getStats(): { rooms: number; connections: number } {
-    let connections = 0
-    for (const room of this.rooms.values()) {
-      connections += room.clients.size
+    return { rooms: this.rooms.size, connections: this.clientRoomMap.size }
+  }
+
+  dispose(): void {
+    for (const room of this.rooms.values()) clearTimeout(room.timeoutHandle)
+    this.rooms.clear()
+    this.clientRoomMap.clear()
+  }
+
+  private getClientRoom(client: WebSocket): Room | undefined {
+    const key = this.clientRoomMap.get(client)
+    return key === undefined ? undefined : this.rooms.get(key)
+  }
+
+  private notifyRoom(room: Room): void {
+    const snapshot: RoomSnapshot | null = room.appId === null ? null : {
+      appId: room.appId,
+      roomId: room.id,
+      capacity: this.config.maxClientsPerRoom,
+      players: [...room.players.values()],
     }
-    return { rooms: this.rooms.size, connections }
+    const message = snapshot === null
+      ? { type: 'peer_count', count: room.clients.size }
+      : { type: 'relay:room', room: snapshot }
+    for (const client of room.clients) this.send(client, message)
   }
 
-  private startTimeout(roomId: string): ReturnType<typeof setTimeout> {
-    return setTimeout(() => {
-      this.handleRoomTimeout(roomId)
-    }, this.roomTimeoutMs)
+  private send(client: WebSocket, message: unknown): void {
+    if (client.readyState === WebSocket.OPEN) this.sendMessage(client, JSON.stringify(message))
   }
 
-  private resetTimeout(room: Room): void {
+  private touch(room: Room): void {
     clearTimeout(room.timeoutHandle)
-    room.timeoutHandle = this.startTimeout(room.id)
+    room.timeoutHandle = this.startTimeout(room.key)
   }
 
-  private handleRoomTimeout(roomId: string): void {
-    const room = this.rooms.get(roomId)
-    if (!room) return
-
-    console.log(
-      JSON.stringify({
-        event: 'room_timeout',
-        roomId,
-        timestamp: new Date().toISOString(),
-      })
-    )
-
-    for (const client of room.clients) {
-      this.clientRoomMap.delete(client)
-      if (client.readyState === WebSocket.OPEN) {
-        client.close()
+  private startTimeout(key: string): ReturnType<typeof setTimeout> {
+    const timer = setTimeout(() => {
+      const room = this.rooms.get(key)
+      if (!room) return
+      this.log('room_timeout', room)
+      for (const client of room.clients) {
+        this.clientRoomMap.delete(client)
+        if (client.readyState === WebSocket.OPEN) client.close(1000, 'Room expired')
       }
-    }
+      this.rooms.delete(key)
+    }, this.config.roomTimeoutMs)
+    timer.unref?.()
+    return timer
+  }
 
-    this.rooms.delete(roomId)
+  private log(event: string, room: Room): void {
+    console.log(JSON.stringify({ event, appId: room.appId, roomId: room.id, peerCount: room.clients.size, timestamp: new Date().toISOString() }))
   }
 }

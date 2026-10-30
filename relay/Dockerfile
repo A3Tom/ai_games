@@ -11,6 +11,6 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
 EXPOSE 8080
-HEALTHCHECK CMD curl -f http://localhost:8080/health || exit 1
+HEALTHCHECK CMD node -e "fetch('http://localhost:' + (process.env.PORT || '8080') + '/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
 USER node
 CMD ["node", "dist/server.js"]

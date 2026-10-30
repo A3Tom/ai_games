@@ -40,6 +40,55 @@ export interface RelayConfig {
   logLevel: string
 }
 
+export interface Player {
+  id: string
+  name: string
+  ready: boolean
+  joinedAt: number
+}
+
+export interface RoomSnapshot {
+  appId: string
+  roomId: string
+  capacity: number
+  players: Player[]
+}
+
+export interface ModernJoinMessage {
+  type: 'relay:join'
+  appId: string
+  roomId: string
+  playerId: string
+  name: string
+}
+
+export interface RelayStats {
+  uptimeSeconds: number
+  rooms: number
+  players: number
+  connections: number
+  messagesReceived: number
+  messagesForwarded: number
+  bytesReceived: number
+  bytesSent: number
+  rejectedMessages: number
+}
+
+export function isRecord(data: unknown): data is Record<string, unknown> {
+  return typeof data === 'object' && data !== null && !Array.isArray(data)
+}
+
+export function isIdentifier(value: unknown): value is string {
+  return typeof value === 'string' && /^[a-zA-Z0-9_-]{1,64}$/.test(value)
+}
+
+export function isModernJoinMessage(data: Record<string, unknown>): data is Record<string, unknown> & ModernJoinMessage {
+  return data.type === 'relay:join' && isIdentifier(data.appId) &&
+    isIdentifier(data.roomId) && isIdentifier(data.playerId) &&
+    typeof data.name === 'string' && data.name.trim().length > 0 &&
+    data.name.length <= 32 && !/[\u0000-\u001f\u007f]/.test(data.name)
+}
+
 export function isJoinMessage(data: unknown): data is JoinMessage {
   return (
     typeof data === 'object' &&
@@ -48,6 +97,7 @@ export function isJoinMessage(data: unknown): data is JoinMessage {
     (data as Record<string, unknown>).type === 'join' &&
     'roomId' in data &&
     typeof (data as Record<string, unknown>).roomId === 'string' &&
-    ((data as Record<string, unknown>).roomId as string).length > 0
+    ((data as Record<string, unknown>).roomId as string).length > 0 &&
+    ((data as Record<string, unknown>).roomId as string).length <= 128
   )
 }
