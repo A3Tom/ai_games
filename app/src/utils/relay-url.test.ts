@@ -14,8 +14,8 @@ describe('relay URL selection', () => {
   })
 
   it('defaults standalone localhost development to the relay dev port', () => {
-    expect(resolveRelayUrl('', 'http://localhost:5173/sea-strike/')).toBe('ws://localhost:8080')
-    expect(resolveRelayUrl('', 'https://localhost:5173/sea-strike/')).toBe('wss://localhost:8080')
+    expect(resolveRelayUrl('', 'http://localhost:5173/sea-strike/')).toBe('ws://localhost:14650')
+    expect(resolveRelayUrl('', 'https://localhost:5173/sea-strike/')).toBe('wss://localhost:14650')
   })
 
   it('requires configuration on Pages and remote LAN builds without the proxy setting', () => {

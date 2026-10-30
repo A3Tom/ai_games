@@ -6,7 +6,7 @@ export function resolveRelayUrl(configuredUrl: string | undefined, pageUrl?: str
   const configured = configuredUrl?.trim() ?? ''
   if (!configured) {
     if (page && LOCAL_HOSTS.includes(page.hostname)) {
-      return `${page.protocol === 'https:' ? 'wss:' : 'ws:'}//localhost:8080`
+      return `${page.protocol === 'https:' ? 'wss:' : 'ws:'}//localhost:14650`
     }
     throw new Error('VITE_RELAY_URL is not configured')
   }

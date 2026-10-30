@@ -24,7 +24,7 @@ function resolveEndpoint(value: string): string {
 }
 const localHost = ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)
 const configuredUrl = import.meta.env.VITE_RELAY_URL as string | undefined
-const endpoint = ref(resolveEndpoint(configuredUrl || stored('multiplayer-lab.endpoint') || (localHost ? 'ws://localhost:8080' : '')))
+const endpoint = ref(resolveEndpoint(configuredUrl || stored('multiplayer-lab.endpoint') || (localHost ? 'ws://localhost:14650' : '')))
 const name = ref(stored('multiplayer-lab.name') || `Player ${Math.floor(Math.random() * 900 + 100)}`)
 const sharedRoom = new URL(window.location.href).searchParams.get('room') ?? ''
 const roomInput = ref(sharedRoom)

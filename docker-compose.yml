@@ -4,7 +4,7 @@ services:
     image: ghcr.io/${GHCR_REPOSITORY:-a3tom/ai_games}:${IMAGE_TAG:-latest}
     restart: unless-stopped
     ports:
-      - "${HOST_PORT:-8080}:8080"
+      - "${HOST_PORT:-14650}:14650"
     environment:
       MAX_ROOMS: "${MAX_ROOMS:-100}"
       MAX_CLIENTS_PER_ROOM: "${MAX_CLIENTS_PER_ROOM:-4}"

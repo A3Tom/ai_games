@@ -8,7 +8,7 @@ dependencies or framework are required.
 import { createMultiplayerClient } from '@ai-games/multiplayer'
 
 const client = createMultiplayerClient({
-  url: 'ws://localhost:8080',
+  url: 'ws://localhost:14650',
   appId: 'my-game',
   name: 'Player one',
 })

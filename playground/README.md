@@ -9,7 +9,7 @@ It is part of the central game collection, with the same build and hosting path 
 The collection and relay run together in one image. After it has been published, start it with Docker (see [collection hosting](../README.md#hosting) for registry authentication):
 
 ```bash
-docker run -d --name ai-games --restart unless-stopped --pull always -p 8080:8080 ghcr.io/a3tom/ai_games:latest
+docker run -d --name ai-games --restart unless-stopped --pull always -p 14650:14650 ghcr.io/a3tom/ai_games:latest
 ```
 
 Alternatively, run `docker compose up -d --pull always --wait` from the repository root. To build and test your current source code locally, use the standalone local file:
@@ -18,9 +18,9 @@ Alternatively, run `docker compose up -d --pull always --wait` from the reposito
 docker compose -f docker-compose.local.yml up --build -d
 ```
 
-Open <http://localhost:8080> and choose **Multiplayer Lab**. On another device on your network, use `http://<your-computer-LAN-IP>:8080` instead. Press **Connect to relay**; the endpoint is automatically configured to use that same address. Create the room using the LAN address before sharing its invite link.
+Open <http://localhost:14650> and choose **Multiplayer Lab**. On another device on your network, use `http://<your-computer-LAN-IP>:14650` instead. Press **Connect to relay**; the endpoint is automatically configured to use that same address. Create the room using the LAN address before sharing its invite link.
 
-Allow incoming TCP 8080 through the host firewall and use a network that permits devices to reach each other. See the [collection README](../README.md) for networking and port configuration.
+Allow incoming TCP 14650 through the host firewall and use a network that permits devices to reach each other. See the [collection README](../README.md) for networking and port configuration.
 
 ## Develop with hot reload
 
@@ -38,7 +38,7 @@ npm --prefix playground ci
 npm --prefix playground run dev
 ```
 
-Standalone Vite defaults to `ws://localhost:8080`. You can edit the endpoint in the connection panel. If using `docker compose -f docker-compose.local.yml up --build -d` instead of the standalone Node relay, connect to the same container on port 8080: run `VITE_RELAY_URL=ws://localhost:8080/relay npm --prefix playground run dev`.
+Standalone Vite defaults to `ws://localhost:14650`. You can edit the endpoint in the connection panel. If using `docker compose -f docker-compose.local.yml up --build -d` instead of the standalone Node relay, connect to the same container on port 14650: run `VITE_RELAY_URL=ws://localhost:14650/relay npm --prefix playground run dev`.
 
 ## Try the mechanisms
 

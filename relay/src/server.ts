@@ -18,7 +18,7 @@ interface RateLimiter {
 
 function loadConfig(): RelayConfig {
   return {
-    port: parseInt(process.env.PORT ?? '8080', 10),
+    port: parseInt(process.env.PORT ?? '14650', 10),
     maxRooms: parseInt(process.env.MAX_ROOMS ?? '100', 10),
     maxClientsPerRoom: parseInt(process.env.MAX_CLIENTS_PER_ROOM ?? '2', 10),
     roomTimeoutMs: parseInt(process.env.ROOM_TIMEOUT_MS ?? '3600000', 10),

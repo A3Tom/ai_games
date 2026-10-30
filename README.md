@@ -9,16 +9,16 @@ Every app, including **Multiplayer Lab**, is listed on one dashboard. One Docker
 After the [GHCR workflow](./.github/workflows/ghcr.yml) has published the image, run this command on any Linux AMD64 host with Docker (see [Hosting](#hosting) for registry authentication):
 
 ```bash
-docker run -d --name ai-games --restart unless-stopped --pull always -p 8080:8080 ghcr.io/a3tom/ai_games:latest
+docker run -d --name ai-games --restart unless-stopped --pull always -p 14650:14650 ghcr.io/a3tom/ai_games:latest
 ```
 
-Open <http://localhost:8080>. The dashboard links to Multiplayer Lab, Minesweeper, Snow Drift, and Sea Strike. No local Node installation or separate Vite process is needed.
+Open <http://localhost:14650>. The dashboard links to Multiplayer Lab, Minesweeper, Snow Drift, and Sea Strike. No local Node installation or separate Vite process is needed.
 
-To share it with another device on your network, open `http://<your-computer-LAN-IP>:8080` on that device, for example `http://192.168.1.20:8080`. On Linux, `hostname -I` lists your machine's addresses; choose the one for your Ethernet or Wi-Fi network. On Windows, use `ipconfig`; on macOS, look in Network settings.
+To share it with another device on your network, open `http://<your-computer-LAN-IP>:14650` on that device, for example `http://192.168.1.20:14650`. On Linux, `hostname -I` lists your machine's addresses; choose the one for your Ethernet or Wi-Fi network. On Windows, use `ipconfig`; on macOS, look in Network settings.
 
-The web port listens on all host interfaces. Both devices must be on the same reachable network, your firewall must allow incoming TCP 8080, and guest Wi-Fi/client isolation must permit access to your computer. Docker Desktop may require allowing incoming connections. No router port forwarding is needed for LAN access.
+The web port listens on all host interfaces. Both devices must be on the same reachable network, your firewall must allow incoming TCP 14650, and guest Wi-Fi/client isolation must permit access to your computer. Docker Desktop may require allowing incoming connections. No router port forwarding is needed for LAN access.
 
-The lab automatically uses the relay at the address you opened: `ws://<host>:8080/relay` over HTTP, or `wss://<host>/relay` behind HTTPS. Create rooms from the LAN URL so invite links point to an address other devices can reach. A link containing `localhost` only works on the computer that opened it.
+The lab automatically uses the relay at the address you opened: `ws://<host>:14650/relay` over HTTP, or `wss://<host>/relay` behind HTTPS. Create rooms from the LAN URL so invite links point to an address other devices can reach. A link containing `localhost` only works on the computer that opened it.
 
 **Sea Strike has an existing browser requirement:** creating a game and committing a board need Web Crypto, available on localhost or HTTPS. Its page is included in the dashboard, but playing from another device requires serving this stack behind a trusted HTTPS reverse proxy. The lab's multiplayer tests work over HTTP on your LAN. Snow Drift currently loads Three.js from a CDN, so it needs Internet access.
 
@@ -30,7 +30,7 @@ docker stop ai-games
 docker start ai-games
 ```
 
-Use `-p 8090:8080` in the run command if host port 8080 is occupied. The dashboard, games, and WebSocket relay all share the published port. Lab rooms allow four players by default; legacy Sea Strike rooms remain limited to two. Pass `-e MAX_CLIENTS_PER_ROOM=8`, `-e MAX_ROOMS=50`, or `-e ROOM_TIMEOUT_MS=60000` to `docker run` to override relay limits. Room state and counters reset when the container restarts.
+Use `-p 14651:14650` in the run command if host port 14650 is occupied. The dashboard, games, and WebSocket relay all share the published port. Lab rooms allow four players by default; legacy Sea Strike rooms remain limited to two. Pass `-e MAX_CLIENTS_PER_ROOM=8`, `-e MAX_ROOMS=50`, or `-e ROOM_TIMEOUT_MS=60000` to `docker run` to override relay limits. Room state and counters reset when the container restarts.
 
 If you prefer Compose, copy [`docker-compose.yml`](./docker-compose.yml) to your host and run `docker compose up -d --pull always --wait`. It runs the same single image. Use `docker compose logs -f` and `docker compose down` to view logs and stop it. Configure `HOST_PORT`, relay limits, and `IMAGE_TAG` through a `.env` file beside the manifest.
 
@@ -39,10 +39,10 @@ To build and test your current source code, use the standalone [`docker-compose.
 ```bash
 docker compose -f docker-compose.local.yml up --build -d
 # With the local stack running, connect a separate Vite development server:
-VITE_RELAY_URL=ws://localhost:8080/relay npm run dev --prefix playground
+VITE_RELAY_URL=ws://localhost:14650/relay npm run dev --prefix playground
 ```
 
-The local dashboard, games, and relay share port 8080. Browser files in the container are production builds; rerun `docker compose -f docker-compose.local.yml up --build -d` after changing source files.
+The local dashboard, games, and relay share port 14650. Browser files in the container are production builds; rerun `docker compose -f docker-compose.local.yml up --build -d` after changing source files.
 
 Use the same local file when checking logs or stopping the stack:
 
@@ -121,7 +121,7 @@ This writes `deploy/`. With dependencies installed, omit `--install`; with app b
 
 ### Pull and run from GHCR
 
-The [GHCR workflow](./.github/workflows/ghcr.yml) publishes one image, `ghcr.io/a3tom/ai_games`, containing the dashboard, every registered game, and the multiplayer relay. A single Node process serves the collection and WebSocket connections on port 8080.
+The [GHCR workflow](./.github/workflows/ghcr.yml) publishes one image, `ghcr.io/a3tom/ai_games`, containing the dashboard, every registered game, and the multiplayer relay. A single Node process serves the collection and WebSocket connections on port 14650.
 
 The workflow builds natively for Linux AMD64 with a 20-minute timeout. Pushes to `master` publish `latest`; `v*` Git tags publish matching image tags, such as `v1.2.3`. Every run also publishes `sha-<full-commit-sha>`. You can run **Publish image to GHCR** manually from the repository's Actions tab; only builds from `master` update `latest`.
 
@@ -140,9 +140,9 @@ Alternatively, copy [`docker-compose.yml`](./docker-compose.yml) to a directory 
 docker compose up -d --pull always --wait
 ```
 
-Open <http://localhost:8080>, or `http://<host-IP>:8080` from another device. Multiplayer uses `/relay` on that same server; health is available at `/health` and `/relay/health`.
+Open <http://localhost:14650>, or `http://<host-IP>:14650` from another device. Multiplayer uses `/relay` on that same server; health is available at `/health` and `/relay/health`.
 
-Repeat `docker compose up -d --pull always --wait` to update the running container. To deploy a specific version or commit, put `IMAGE_TAG=v1.2.3` or `IMAGE_TAG=sha-<full-commit-sha>` in a `.env` file beside the manifest. You can also set `HOST_PORT=8090` and the relay environment variables described above in that file. For a fork, set `GHCR_REPOSITORY=owner/repository` using lowercase names to match the workflow's image name.
+Repeat `docker compose up -d --pull always --wait` to update the running container. To deploy a specific version or commit, put `IMAGE_TAG=v1.2.3` or `IMAGE_TAG=sha-<full-commit-sha>` in a `.env` file beside the manifest. You can also set `HOST_PORT=14651` and the relay environment variables described above in that file. For a fork, set `GHCR_REPOSITORY=owner/repository` using lowercase names to match the workflow's image name.
 
 ```bash
 docker compose ps
@@ -160,7 +160,7 @@ The collection is configured for <https://a3tom.github.io/ai_games/>; the lab's 
 
 Pages hosts static files, so deploy the relay separately as a long-running WebSocket service. Set the GitHub repository Actions variable `VITE_RELAY_URL` to its `wss://` endpoint before building; this configures both multiplayer apps. Alternatively, enter the endpoint in the lab. No relay is provisioned by the Pages workflow.
 
-For HTTPS hosting of the container, place your TLS reverse proxy in front of port 8080 and pass WebSocket upgrades. The browser automatically selects `wss://` on HTTPS pages.
+For HTTPS hosting of the container, place your TLS reverse proxy in front of port 14650 and pass WebSocket upgrades. The browser automatically selects `wss://` on HTTPS pages.
 
 ## Local development and checks
 
@@ -174,7 +174,7 @@ npm ci --prefix playground
 npm run dev --prefix playground
 ```
 
-The standalone lab defaults to `ws://localhost:8080`. Its connection panel accepts another endpoint.
+The standalone lab defaults to `ws://localhost:14650`. Its connection panel accepts another endpoint.
 
 ```bash
 npm test --prefix relay
