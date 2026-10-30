@@ -36,8 +36,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Validate deployment Compose file
-        run: docker compose -f docker-compose.ghcr.yml config --quiet
+      - name: Validate Compose files
+        run: |
+          docker compose config --quiet
+          docker compose -f docker-compose.local.yml config --quiet
 
       - name: Set image name
         id: image

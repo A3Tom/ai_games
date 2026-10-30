@@ -6,10 +6,17 @@ It is part of the central game collection, with the same build and hosting path 
 
 ## Run with the collection
 
-From the repository root:
+The default Compose file runs published GHCR images. After the images have been published, run from the repository root (see [collection hosting](../README.md#hosting) for registry authentication):
 
 ```bash
-docker compose up --build -d
+docker compose pull
+docker compose up -d --wait
+```
+
+To build and test your current source code locally, use the standalone local file:
+
+```bash
+docker compose -f docker-compose.local.yml up --build -d
 ```
 
 Open <http://localhost:8080> and choose **Multiplayer Lab**. On another device on your network, use `http://<your-computer-LAN-IP>:8080` instead. Press **Connect to relay**; the endpoint is automatically configured to use that same address. Create the room using the LAN address before sharing its invite link.
@@ -32,7 +39,7 @@ npm --prefix playground ci
 npm --prefix playground run dev
 ```
 
-Standalone Vite defaults to `ws://localhost:8080`. You can edit the endpoint in the connection panel. If using the optional Compose local overlay instead of the Node relay, its direct relay port is 8081: run `VITE_RELAY_URL=ws://localhost:8081 npm --prefix playground run dev`.
+Standalone Vite defaults to `ws://localhost:8080`. You can edit the endpoint in the connection panel. If using `docker compose -f docker-compose.local.yml up --build -d` instead of the Node relay, its direct relay port is 8081: run `VITE_RELAY_URL=ws://localhost:8081 npm --prefix playground run dev`.
 
 ## Try the mechanisms
 

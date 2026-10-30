@@ -6,10 +6,11 @@ Every app, including **Multiplayer Lab**, is listed on one dashboard. Docker Com
 
 ## Run the collection
 
-From the repository root:
+The default Compose file runs published GHCR images. After the [GHCR workflow](./.github/workflows/ghcr.yml) has published them, run from the repository root (see [Hosting](#hosting) for registry authentication):
 
 ```bash
-docker compose up --build -d
+docker compose pull
+docker compose up -d --wait
 ```
 
 Open <http://localhost:8080>. The dashboard links to Multiplayer Lab, Minesweeper, Snow Drift, and Sea Strike. No local Node installation or separate Vite process is needed.
@@ -28,19 +29,27 @@ Useful commands:
 docker compose logs -f
 docker compose down
 # Use a different web port if 8080 is occupied:
-HOST_PORT=8090 docker compose up --build -d
+HOST_PORT=8090 docker compose up -d --wait
 ```
 
-The relay stays private inside Compose. Lab rooms allow four players by default; legacy Sea Strike rooms remain limited to two. Override `MAX_CLIENTS_PER_ROOM`, `MAX_ROOMS`, or `ROOM_TIMEOUT_MS` through environment variables or a root `.env` file. Room state and counters reset when the relay restarts. Browser files are production builds; rerun `docker compose up --build -d` after changing them.
+The default stack keeps the relay private inside Compose. Lab rooms allow four players by default; legacy Sea Strike rooms remain limited to two. Override `MAX_CLIENTS_PER_ROOM`, `MAX_ROOMS`, or `ROOM_TIMEOUT_MS` through environment variables or a root `.env` file. Room state and counters reset when the relay restarts. Repeat `docker compose pull` and `docker compose up -d --wait` to update published images.
 
-The optional local overlay also exposes the raw relay on **127.0.0.1:8081**, for a separate development server:
+To build and test your current source code, use the standalone [`docker-compose.local.yml`](./docker-compose.local.yml). It runs the whole collection and also exposes the raw relay on **127.0.0.1:8081** for a separate development server:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.local.yml up --build -d
+docker compose -f docker-compose.local.yml up --build -d
+# With the local stack running, connect a separate Vite development server:
 VITE_RELAY_URL=ws://localhost:8081 npm run dev --prefix playground
 ```
 
-The dashboard and games still run on port 8080 with that overlay. The raw relay development port does not need to be shared across your network.
+The local dashboard and games run on port 8080. Browser files in the containers are production builds; rerun `docker compose -f docker-compose.local.yml up --build -d` after changing source files. The raw relay development port stays bound to localhost.
+
+Use the same local file when checking logs or stopping the stack:
+
+```bash
+docker compose -f docker-compose.local.yml logs -f
+docker compose -f docker-compose.local.yml down
+```
 
 ## What to try
 
@@ -121,11 +130,11 @@ Publishing uses the workflow's automatic `GITHUB_TOKEN` with `packages: write`; 
 docker login ghcr.io
 ```
 
-Copy [`docker-compose.ghcr.yml`](./docker-compose.ghcr.yml) to a directory on any host with Docker Compose. This is a standalone manifest; the host does not need the source code or Node. After the images have been published, run:
+Copy [`docker-compose.yml`](./docker-compose.yml) to a directory on any host with Docker Compose. This is the default deployment manifest; the host does not need the source code or Node. After the images have been published, run from that directory:
 
 ```bash
-docker compose -f docker-compose.ghcr.yml pull
-docker compose -f docker-compose.ghcr.yml up -d --wait
+docker compose pull
+docker compose up -d --wait
 ```
 
 Open <http://localhost:8080>, or `http://<host-IP>:8080` from another device. The web image includes the dashboard and all registered games, and proxies multiplayer connections to the private relay at `/relay`.
@@ -133,9 +142,9 @@ Open <http://localhost:8080>, or `http://<host-IP>:8080` from another device. Th
 Repeat `pull` and `up -d --wait` to update running containers. To deploy a specific version or commit, put `IMAGE_TAG=v1.2.3` or `IMAGE_TAG=sha-<full-commit-sha>` in a `.env` file beside the manifest; both services use the same tag. You can also set `HOST_PORT=8090` and the relay environment variables described above in that file. For a fork, set `GHCR_REPOSITORY=owner/repository` using lowercase names to match the workflow's image names.
 
 ```bash
-docker compose -f docker-compose.ghcr.yml ps
-docker compose -f docker-compose.ghcr.yml logs -f
-docker compose -f docker-compose.ghcr.yml down
+docker compose ps
+docker compose logs -f
+docker compose down
 ```
 
 The workflow publishes images; run the Compose commands on your deployment host to deploy them.
