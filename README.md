@@ -2,15 +2,14 @@
 
 A workshop for small browser games built with coding agents. Keep each game focused on its idea, and reuse multiplayer and diagnostics where they help.
 
-Every app, including **Multiplayer Lab**, is listed on one dashboard. Docker Compose runs the whole collection and the multiplayer relay together.
+Every app, including **Multiplayer Lab**, is listed on one dashboard. One Docker image runs the whole collection and the multiplayer relay together.
 
 ## Run the collection
 
-The default Compose file runs published GHCR images. After the [GHCR workflow](./.github/workflows/ghcr.yml) has published them, run from the repository root (see [Hosting](#hosting) for registry authentication):
+After the [GHCR workflow](./.github/workflows/ghcr.yml) has published the image, run this command on any Linux AMD64 host with Docker (see [Hosting](#hosting) for registry authentication):
 
 ```bash
-docker compose pull
-docker compose up -d --wait
+docker run -d --name ai-games --restart unless-stopped --pull always -p 8080:8080 ghcr.io/a3tom/ai_games:latest
 ```
 
 Open <http://localhost:8080>. The dashboard links to Multiplayer Lab, Minesweeper, Snow Drift, and Sea Strike. No local Node installation or separate Vite process is needed.
@@ -26,23 +25,24 @@ The lab automatically uses the relay at the address you opened: `ws://<host>:808
 Useful commands:
 
 ```bash
-docker compose logs -f
-docker compose down
-# Use a different web port if 8080 is occupied:
-HOST_PORT=8090 docker compose up -d --wait
+docker logs -f ai-games
+docker stop ai-games
+docker start ai-games
 ```
 
-The default stack keeps the relay private inside Compose. Lab rooms allow four players by default; legacy Sea Strike rooms remain limited to two. Override `MAX_CLIENTS_PER_ROOM`, `MAX_ROOMS`, or `ROOM_TIMEOUT_MS` through environment variables or a root `.env` file. Room state and counters reset when the relay restarts. Repeat `docker compose pull` and `docker compose up -d --wait` to update published images.
+Use `-p 8090:8080` in the run command if host port 8080 is occupied. The dashboard, games, and WebSocket relay all share the published port. Lab rooms allow four players by default; legacy Sea Strike rooms remain limited to two. Pass `-e MAX_CLIENTS_PER_ROOM=8`, `-e MAX_ROOMS=50`, or `-e ROOM_TIMEOUT_MS=60000` to `docker run` to override relay limits. Room state and counters reset when the container restarts.
 
-To build and test your current source code, use the standalone [`docker-compose.local.yml`](./docker-compose.local.yml). It runs the whole collection and also exposes the raw relay on **127.0.0.1:8081** for a separate development server:
+If you prefer Compose, copy [`docker-compose.yml`](./docker-compose.yml) to your host and run `docker compose up -d --pull always --wait`. It runs the same single image. Use `docker compose logs -f` and `docker compose down` to view logs and stop it. Configure `HOST_PORT`, relay limits, and `IMAGE_TAG` through a `.env` file beside the manifest.
+
+To build and test your current source code, use the standalone [`docker-compose.local.yml`](./docker-compose.local.yml):
 
 ```bash
 docker compose -f docker-compose.local.yml up --build -d
 # With the local stack running, connect a separate Vite development server:
-VITE_RELAY_URL=ws://localhost:8081 npm run dev --prefix playground
+VITE_RELAY_URL=ws://localhost:8080/relay npm run dev --prefix playground
 ```
 
-The local dashboard and games run on port 8080. Browser files in the containers are production builds; rerun `docker compose -f docker-compose.local.yml up --build -d` after changing source files. The raw relay development port stays bound to localhost.
+The local dashboard, games, and relay share port 8080. Browser files in the container are production builds; rerun `docker compose -f docker-compose.local.yml up --build -d` after changing source files.
 
 Use the same local file when checking logs or stopping the stack:
 
@@ -121,25 +121,28 @@ This writes `deploy/`. With dependencies installed, omit `--install`; with app b
 
 ### Pull and run from GHCR
 
-The [GHCR workflow](./.github/workflows/ghcr.yml) publishes the web collection and relay as `ghcr.io/a3tom/ai_games-web` and `ghcr.io/a3tom/ai_games-relay`, with images for Linux AMD64 and ARM64. Pushes to `master` publish `latest`; `v*` Git tags publish matching image tags, such as `v1.2.3`. Every run also publishes `sha-<full-commit-sha>`. You can run **Publish containers to GHCR** manually from the repository's Actions tab; only builds from `master` update `latest`.
+The [GHCR workflow](./.github/workflows/ghcr.yml) publishes one image, `ghcr.io/a3tom/ai_games`, containing the dashboard, every registered game, and the multiplayer relay. A single Node process serves the collection and WebSocket connections on port 8080.
 
-Publishing uses the workflow's automatic `GITHUB_TOKEN` with `packages: write`; no additional registry secret is needed. After the first successful run, both packages appear under the repository owner's **Packages**. [GHCR packages start private](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry). Make both packages public for anonymous pulls, or log in on the deployment host with a personal access token (classic) that has `read:packages` and access to both packages:
+The workflow builds natively for Linux AMD64 with a 20-minute timeout. Pushes to `master` publish `latest`; `v*` Git tags publish matching image tags, such as `v1.2.3`. Every run also publishes `sha-<full-commit-sha>`. You can run **Publish image to GHCR** manually from the repository's Actions tab; only builds from `master` update `latest`.
+
+Publishing uses the workflow's automatic `GITHUB_TOKEN` with `packages: write`; no additional registry secret is needed. After the first successful run, the package appears under the repository owner's **Packages**. [GHCR packages start private](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry). Make the package public for anonymous pulls, or log in on the deployment host with a personal access token (classic) that has `read:packages` and access to the package:
 
 ```bash
-# For private packages, enter your GitHub username and use the token as the password:
+# For a private package, enter your GitHub username and use the token as the password:
 docker login ghcr.io
 ```
 
-Copy [`docker-compose.yml`](./docker-compose.yml) to a directory on any host with Docker Compose. This is the default deployment manifest; the host does not need the source code or Node. After the images have been published, run from that directory:
+Use the `docker run` command above to pull and start the image without a source checkout or Compose file. To replace an existing container with a new image version, stop and remove it with `docker stop ai-games` and `docker rm ai-games`, then repeat the run command. Rooms and relay counters are ephemeral and reset on replacement.
+
+Alternatively, copy [`docker-compose.yml`](./docker-compose.yml) to a directory on any Linux AMD64 host with Docker Compose. After the image has been published, run from that directory:
 
 ```bash
-docker compose pull
-docker compose up -d --wait
+docker compose up -d --pull always --wait
 ```
 
-Open <http://localhost:8080>, or `http://<host-IP>:8080` from another device. The web image includes the dashboard and all registered games, and proxies multiplayer connections to the private relay at `/relay`.
+Open <http://localhost:8080>, or `http://<host-IP>:8080` from another device. Multiplayer uses `/relay` on that same server; health is available at `/health` and `/relay/health`.
 
-Repeat `pull` and `up -d --wait` to update running containers. To deploy a specific version or commit, put `IMAGE_TAG=v1.2.3` or `IMAGE_TAG=sha-<full-commit-sha>` in a `.env` file beside the manifest; both services use the same tag. You can also set `HOST_PORT=8090` and the relay environment variables described above in that file. For a fork, set `GHCR_REPOSITORY=owner/repository` using lowercase names to match the workflow's image names.
+Repeat `docker compose up -d --pull always --wait` to update the running container. To deploy a specific version or commit, put `IMAGE_TAG=v1.2.3` or `IMAGE_TAG=sha-<full-commit-sha>` in a `.env` file beside the manifest. You can also set `HOST_PORT=8090` and the relay environment variables described above in that file. For a fork, set `GHCR_REPOSITORY=owner/repository` using lowercase names to match the workflow's image name.
 
 ```bash
 docker compose ps
@@ -147,7 +150,7 @@ docker compose logs -f
 docker compose down
 ```
 
-The workflow publishes images; run the Compose commands on your deployment host to deploy them.
+The workflow publishes the image; run Docker or Compose on your deployment host to start it.
 
 ### GitHub Pages
 
@@ -157,7 +160,7 @@ The collection is configured for <https://a3tom.github.io/ai_games/>; the lab's 
 
 Pages hosts static files, so deploy the relay separately as a long-running WebSocket service. Set the GitHub repository Actions variable `VITE_RELAY_URL` to its `wss://` endpoint before building; this configures both multiplayer apps. Alternatively, enter the endpoint in the lab. No relay is provisioned by the Pages workflow.
 
-The Compose stack includes an Nginx web server with a same-origin WebSocket proxy at `/relay` and relay health at `/health`. For HTTPS hosting, place your TLS reverse proxy in front of the web service and pass WebSocket upgrades. The browser automatically selects `wss://` on HTTPS pages.
+For HTTPS hosting of the container, place your TLS reverse proxy in front of port 8080 and pass WebSocket upgrades. The browser automatically selects `wss://` on HTTPS pages.
 
 ## Local development and checks
 

@@ -3,7 +3,7 @@ import http from 'node:http'
 import { WebSocketServer, WebSocket } from 'ws'
 
 import { RoomManager } from './room-manager.js'
-import { createHealthHandler } from './health.js'
+import { createHttpHandler } from './http-handler.js'
 import { isIdentifier, isJoinMessage, isModernJoinMessage, isRecord } from './types.js'
 import type { RelayConfig, RelayStats } from './types.js'
 
@@ -26,7 +26,7 @@ function loadConfig(): RelayConfig {
   }
 }
 
-export function createServer(config: RelayConfig): {
+export function createServer(config: RelayConfig, staticDir?: string): {
   httpServer: http.Server
   wss: WebSocketServer
   roomManager: RoomManager
@@ -43,7 +43,7 @@ export function createServer(config: RelayConfig): {
   }
 
   const roomManager = new RoomManager(config, sendRaw)
-  const httpServer = http.createServer(createHealthHandler(() => roomManager.getStats()))
+  const httpServer = http.createServer(createHttpHandler(() => roomManager.getStats(), staticDir))
   const wss = new WebSocketServer({ server: httpServer, maxPayload: 64 * 1024 })
   const rateLimiters = new Map<WebSocket, RateLimiter>()
   const modernClients = new WeakSet<WebSocket>()
@@ -219,7 +219,7 @@ const isMainModule = process.argv[1] && (process.argv[1].endsWith('server.js') |
 
 if (isMainModule) {
   const config = loadConfig()
-  const { httpServer, wss } = createServer(config)
+  const { httpServer, wss } = createServer(config, process.env.STATIC_DIR)
   httpServer.listen(config.port, () => {
     console.log(JSON.stringify({ event: 'server_started', port: config.port, timestamp: new Date().toISOString() }))
   })

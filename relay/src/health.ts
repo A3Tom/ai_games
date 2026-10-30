@@ -12,7 +12,7 @@ export function createHealthHandler(
   getStats: StatsProvider
 ): (req: IncomingMessage, res: ServerResponse) => void {
   return (req: IncomingMessage, res: ServerResponse): void => {
-    if (req.method !== 'GET' || req.url !== '/health') {
+    if (req.method !== 'GET' || (req.url !== '/health' && req.url !== '/relay/health')) {
       res.writeHead(404, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify({ error: 'Not found' }))
       return

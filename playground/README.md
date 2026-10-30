@@ -6,14 +6,13 @@ It is part of the central game collection, with the same build and hosting path 
 
 ## Run with the collection
 
-The default Compose file runs published GHCR images. After the images have been published, run from the repository root (see [collection hosting](../README.md#hosting) for registry authentication):
+The collection and relay run together in one image. After it has been published, start it with Docker (see [collection hosting](../README.md#hosting) for registry authentication):
 
 ```bash
-docker compose pull
-docker compose up -d --wait
+docker run -d --name ai-games --restart unless-stopped --pull always -p 8080:8080 ghcr.io/a3tom/ai_games:latest
 ```
 
-To build and test your current source code locally, use the standalone local file:
+Alternatively, run `docker compose up -d --pull always --wait` from the repository root. To build and test your current source code locally, use the standalone local file:
 
 ```bash
 docker compose -f docker-compose.local.yml up --build -d
@@ -39,7 +38,7 @@ npm --prefix playground ci
 npm --prefix playground run dev
 ```
 
-Standalone Vite defaults to `ws://localhost:8080`. You can edit the endpoint in the connection panel. If using `docker compose -f docker-compose.local.yml up --build -d` instead of the Node relay, its direct relay port is 8081: run `VITE_RELAY_URL=ws://localhost:8081 npm --prefix playground run dev`.
+Standalone Vite defaults to `ws://localhost:8080`. You can edit the endpoint in the connection panel. If using `docker compose -f docker-compose.local.yml up --build -d` instead of the standalone Node relay, connect to the same container on port 8080: run `VITE_RELAY_URL=ws://localhost:8080/relay npm --prefix playground run dev`.
 
 ## Try the mechanisms
 
@@ -68,7 +67,7 @@ These are live diagnostics. There is no historical analytics storage or durable 
 VITE_RELAY_URL=wss://relay.example.com npm --prefix playground run build
 ```
 
-The build in `playground/dist/` uses relative asset paths and can be hosted under a collection subdirectory. An HTTPS page requires a `wss://` relay. Set `VITE_RELAY_URL=/relay` for same-origin hosting through a WebSocket proxy, as the Docker build does. Relative endpoints automatically use the current host and select `ws://` or `wss://` from the page protocol. If no endpoint is configured at build time, a hosted lab asks the user to enter one.
+The build in `playground/dist/` uses relative asset paths and can be hosted under a collection subdirectory. An HTTPS page requires a `wss://` relay. Set `VITE_RELAY_URL=/relay` for same-origin hosting, as the combined Docker image does. Relative endpoints automatically use the current host and select `ws://` or `wss://` from the page protocol. If no endpoint is configured at build time, a hosted lab asks the user to enter one.
 
 ```bash
 npm --prefix playground run type-check
