@@ -80,7 +80,7 @@ The game has been refactored into a modular, object-oriented structure:
 
 ## How to Run
 
-Simply open `index.html` in a modern web browser that supports ES6 modules and import maps.
+From the repository root, run `python3 -m http.server 8000` and open <http://localhost:8000/snow_drift/> in a modern browser. Serving the root makes the shared page shell at `shared/game-shell.js` available alongside the game. Three.js still loads from its CDN.
 
 ## Controls
 

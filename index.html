@@ -22,24 +22,24 @@
         .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
         .tag { background: #23333e; padding: 3px 10px; border-radius: 6px; color: #a8dbcc; font-size: .75rem; }
         .play { margin-top: 24px; color: #82dfc0; font-size: .9rem; font-weight: 600; }
-        footer { margin-top: 40px; border-top: 1px solid #2b3945; padding-top: 24px; color: #9cabb7; font-size: .85rem; }
-        footer a { color: #b7c8d3; }
         .load-error { color: #f3bb98; }
         @media (prefers-reduced-motion: reduce) { .game-card { transition: none; } }
     </style>
 </head>
 <body>
-    <main class="container">
-        <header>
+    <game-shell home-href="./">
+    <div class="container">
+        <div>
             <span class="eyebrow">SMALL IDEAS. PLAYABLE EXPERIMENTS.</span>
             <h1>AI Games Collection</h1>
             <p class="subtitle">Pick something to play, or open the Multiplayer Lab to try rooms, connections, and live metrics with a friend.</p>
-        </header>
+        </div>
         <div id="games" class="games-grid" aria-label="Games" aria-live="polite"></div>
         <p id="load-error" class="load-error" role="alert" hidden>Could not load the collection. Refresh the page to try again.</p>
         <noscript><p>Enable JavaScript to see the game collection.</p></noscript>
-        <footer>Built with coding agents, played in a browser. <a href="https://github.com/A3Tom/ai_games" target="_blank" rel="noopener noreferrer">View source on GitHub ↗</a></footer>
-    </main>
+    </div>
+    </game-shell>
+    <script type="module" src="./shared/game-shell.js"></script>
     <script type="module">
         const element = (tag, text, className) => {
             const node = document.createElement(tag)

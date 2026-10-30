@@ -30,7 +30,7 @@ for (const game of games) {
 
 // Never replace source directories if the output argument is mistyped.
 const protectedPaths = [root, ...games.map((game) => path.join(root, game.source)),
-  path.join(root, 'packages'), path.join(root, 'relay'), path.join(root, 'scripts'),
+  path.join(root, 'packages'), path.join(root, 'relay'), path.join(root, 'scripts'), path.join(root, 'shared'),
   path.join(root, 'docker'), path.join(root, 'docs'), path.join(root, '.git')]
 if (output === path.parse(output).root ||
     protectedPaths.some((source) => source === output || source.startsWith(output + path.sep)) ||
@@ -67,4 +67,5 @@ for (const game of games) {
 }
 await cp(path.join(root, 'index.html'), path.join(output, 'index.html'))
 await cp(path.join(root, 'games.json'), path.join(output, 'games.json'))
+await cp(path.join(root, 'shared'), path.join(output, 'shared'), { recursive: true })
 console.log(`Packaged ${games.length} games and dashboard in ${output}`)

@@ -99,7 +99,7 @@ After the subscription reports a room, send game actions with `client.send({ act
 | Snow Drift | [`snow_drift/`](./snow_drift) | JavaScript, browser rendering |
 | Sea Strike | [`app/`](./app) | Vue, TypeScript, Vite; existing Battleship implementation |
 
-The existing games keep their own structure. Sea Strike's design documents under `docs/01-*` through `docs/05-*`, phases, and tickets describe that game specifically.
+The games share a page header and footer through [`shared/game-shell.js`](./shared/game-shell.js), a small browser component that works with Vue, React, or plain JavaScript. Each game owns the content inside it. Sea Strike's design documents under `docs/01-*` through `docs/05-*`, phases, and tickets describe that game specifically.
 
 ## Add a game
 
@@ -108,6 +108,19 @@ The existing games keep their own structure. Sea Strike's design documents under
 - For a Vite app, set `build: true`, provide a lockfile and `npm run build` producing `dist/`, and use relative asset paths (`base: './'`).
 - For plain browser files, set `build: false`; the source directory is copied as-is.
 - For multiplayer, use a unique `appId` with the shared client. Resolve the configured `/relay` endpoint against the page origin for a Compose build.
+
+Wrap the game's mount point in the shared shell in its `index.html`:
+
+```html
+<game-shell page-title="My Game" home-href="../">
+  <div id="app"></div>
+</game-shell>
+<script type="module">import '../shared/game-shell.js'</script>
+```
+
+Vite bundles the shell automatically; the collection build copies it for plain browser games. Keep the game layout inside this wrapper rather than sizing it to the whole browser window. The shell has an empty `shared` slot for future collection features. Shared features can be added centrally in `shared/game-shell.js`, or supplied as a direct child with `slot="shared"`.
+
+For a plain browser game that imports the shell, serve the repository root and open its subdirectory, for example `python3 -m http.server 8000` then `http://localhost:8000/snow_drift/`.
 
 The collection script installs/builds registered apps and packages them at their declared paths:
 
@@ -187,4 +200,4 @@ npm run type-check --prefix packages/multiplayer
 npm run build --prefix playground
 ```
 
-To work on the older games, run `npm ci` and `npm run dev` inside `minesweeper/` or `app/`. Serve `snow_drift/` with a local HTTP server.
+To work on the older games, run `npm ci` and `npm run dev` inside `minesweeper/` or `app/`. For Snow Drift, serve the repository root with a local HTTP server and open `/snow_drift/`.

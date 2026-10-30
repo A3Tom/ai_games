@@ -147,7 +147,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex min-h-screen flex-col">
+  <div class="flex flex-1 flex-col">
     <SetupPhase
       v-if="phase === GAME_PHASES.SETUP || phase === GAME_PHASES.COMMIT"
       @board-committed="handleBoardCommitted"

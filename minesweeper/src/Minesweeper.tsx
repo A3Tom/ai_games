@@ -38,7 +38,7 @@ export function Minesweeper() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4 font-sans text-slate-900">
+    <div className="flex-1 bg-slate-100 flex flex-col items-center justify-center p-4 font-sans text-slate-900">
       <DifficultySelector difficulty={difficulty} onChange={setDifficulty} />
 
       <ProgressPanel 

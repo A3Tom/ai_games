@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bam in a carpark</title>
+    <script type="module" src="../shared/game-shell.js"></script>
     
     <!-- Import map for Three.js ES6 module -->
     <script type="importmap">
@@ -17,10 +18,26 @@
     <style>
         body {
             margin: 0;
-            overflow: hidden;
             background-color: #aaccff; /* Foggy sky color */
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        #game-viewport {
+            position: relative;
+            min-height: 480px;
+            overflow: hidden;
             user-select: none;
+        }
+        #game-viewport > canvas {
+            position: absolute;
+            inset: 0;
+            display: block;
+            z-index: 0;
+        }
+        #ui-container, #score, #timer, #stats-panel, #high-score {
+            z-index: 1;
+        }
+        #game-over-overlay > * {
+            flex-shrink: 0;
         }
         #ui-container {
             position: absolute;
@@ -127,6 +144,8 @@
     </style>
 </head>
 <body>
+    <game-shell page-title="Snow Drift" home-href="../">
+    <div id="game-viewport">
 
     <div id="ui-container">
         <h1>BAM IN A CARPARK</h1>
@@ -155,13 +174,15 @@
             <span class="value" id="angle-value">0°</span>
         </div>
     </div>
+    </div>
+    </game-shell>
 
     <!-- Main game entry point using ES6 modules -->
     <script type="module">
         import { Game } from './js/game.js';
         
         // Initialize the game
-        new Game();
+        new Game(document.getElementById('game-viewport'));
     </script>
 </body>
 </html>

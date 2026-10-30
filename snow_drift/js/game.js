@@ -11,7 +11,8 @@ import { PickupManager } from './pickups.js';
  * Orchestrates all game systems and the main game loop
  */
 export class Game {
-    constructor() {
+    constructor(container) {
+        this.container = container;
         this.scene = null;
         this.camera = null;
         this.renderer = null;
@@ -53,7 +54,7 @@ export class Game {
     _setupCamera() {
         this.camera = new THREE.PerspectiveCamera(
             CONFIG.cameraFOV,
-            window.innerWidth / window.innerHeight,
+            this.container.clientWidth / this.container.clientHeight,
             0.1,
             1000
         );
@@ -61,10 +62,10 @@ export class Game {
     
     _setupRenderer() {
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        document.body.appendChild(this.renderer.domElement);
+        this.container.appendChild(this.renderer.domElement);
     }
     
     _setupGameSystems() {
@@ -132,20 +133,23 @@ export class Game {
             
             highScoreContainer.appendChild(label);
             highScoreContainer.appendChild(value);
-            document.body.appendChild(highScoreContainer);
+            this.container.appendChild(highScoreContainer);
             
             this.highScoreElement = value;
         }
     }
     
     _setupEventListeners() {
-        window.addEventListener('resize', () => this._onWindowResize());
+        this.resizeObserver = new ResizeObserver(() => this._onResize());
+        this.resizeObserver.observe(this.container);
     }
     
-    _onWindowResize() {
-        this.camera.aspect = window.innerWidth / window.innerHeight;
+    _onResize() {
+        const { clientWidth: width, clientHeight: height } = this.container;
+        if (!width || !height) return;
+        this.camera.aspect = width / height;
         this.camera.updateProjectionMatrix();
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setSize(width, height);
     }
     
     _start() {
@@ -302,7 +306,7 @@ export class Game {
         const popup = document.createElement('div');
         popup.textContent = text;
         popup.style.cssText = `
-            position: fixed;
+            position: absolute;
             color: ${color};
             font-size: 48px;
             font-weight: bold;
@@ -340,14 +344,14 @@ export class Game {
         const vector = new THREE.Vector3(position.x, 2, position.z);
         vector.project(this.camera);
         
-        const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
-        const y = (-vector.y * 0.5 + 0.5) * window.innerHeight;
+        const x = (vector.x * 0.5 + 0.5) * this.container.clientWidth;
+        const y = (-vector.y * 0.5 + 0.5) * this.container.clientHeight;
         
         popup.style.left = `${x}px`;
         popup.style.top = `${y}px`;
         popup.style.transform = 'translate(-50%, -50%)';
         
-        document.body.appendChild(popup);
+        this.container.appendChild(popup);
         
         // Remove after animation completes
         setTimeout(() => {
@@ -396,15 +400,18 @@ export class Game {
         const overlay = document.createElement('div');
         overlay.id = 'game-over-overlay';
         overlay.style.cssText = `
-            position: fixed;
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
+            box-sizing: border-box;
+            padding: 24px;
+            overflow: auto;
             background: rgba(0, 0, 0, 0.9);
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start;
             align-items: center;
             z-index: 1000;
         `;
@@ -672,7 +679,7 @@ export class Game {
         overlay.appendChild(bottleWrapper);
         overlay.appendChild(nedLevelText);
         overlay.appendChild(restartButton);
-        document.body.appendChild(overlay);
+        this.container.appendChild(overlay);
         
         // Trigger animations
         setTimeout(() => {

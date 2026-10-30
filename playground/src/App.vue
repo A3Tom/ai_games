@@ -150,8 +150,7 @@ onUnmounted(() => { if (copyTimer) clearTimeout(copyTimer); unsubscribe(); clien
 
 <template>
   <div class="app-shell">
-    <header class="masthead"><a class="brand" href="../"><span class="brand-icon" aria-hidden="true">⌁</span><span>AI GAMES<span class="brand-divider">/</span><strong>LAB</strong></span></a><span class="build-tag"><i class="live-dot"></i> MULTIPLAYER WORKBENCH <span class="muted">v0.1</span></span></header>
-    <main>
+    <div>
       <div class="page-intro"><div><span class="eyebrow">THE PLAYGROUND BEFORE THE GAME</span><h1>Multiplayer Lab<span>.</span></h1><p>Make a connection. Share a room. See what happens.</p></div><div class="session-state"><span class="status-pill" :class="state.status"><span class="status-dot"></span>{{ state.status }}</span><span class="muted small">{{ activeConnections }}</span></div></div>
       <div v-if="!endpoint" class="notice setup-notice"><strong>Point the lab at your relay.</strong><span>Enter its wss:// endpoint below. For a hosted build, set VITE_RELAY_URL.</span></div>
       <div class="dashboard-grid">
@@ -159,7 +158,6 @@ onUnmounted(() => { if (copyTimer) clearTimeout(copyTimer); unsubscribe(); clien
         <div class="main-panels"><LatencyPanel :state="state" @ping="client.ping()" /><ActionsPanel :state="state" @send="client.send($event)" /><ServerPanel :state="state" @refresh="client.requestStats()" @reset="client.resetMetrics()" /></div>
       </div>
       <EventLog :events="state.events" />
-    </main>
-    <footer class="site-footer"><span>Built to test the small things that make multiplayer work.</span><span class="mono">No accounts · Live metrics · Shared client</span></footer>
+    </div>
   </div>
 </template>

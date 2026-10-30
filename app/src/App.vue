@@ -3,10 +3,10 @@ import AppHeader from './components/shared/AppHeader.vue'
 </script>
 
 <template>
-  <div class="flex min-h-screen flex-col">
+  <div class="flex flex-1 flex-col bg-gray-700">
     <AppHeader />
-    <main class="flex flex-1 flex-col bg-gray-700">
+    <div class="flex flex-1 flex-col">
       <RouterView />
-    </main>
+    </div>
   </div>
 </template>

@@ -25,6 +25,11 @@ export class InputManager {
     }
     
     _handleKeyDown(e) {
+        if (e.composedPath().some((element) => element instanceof HTMLElement &&
+            (element.matches('input, textarea, select, button, a[href]') || element.isContentEditable))) return;
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'Spacebar'].includes(e.key)) {
+            e.preventDefault();
+        }
         switch(e.key.toLowerCase()) {
             case 'w': 
             case 'arrowup': 
