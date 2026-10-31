@@ -2,7 +2,7 @@
   "name": "ai-games-collection",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@10.34.9",
+  "packageManager": "pnpm@12.16.1",
   "scripts": {
     "build": "pnpm run build:server && pnpm run build:collection",
     "build:server": "pnpm --filter @ai-games/game-server run build",

@@ -99,7 +99,7 @@ test('invalidates every game artifact when workspace installation inputs change'
   const root = await fixture()
   let previous = (await discover(root)).include.map((entry) => entry.key)
   for (const [name, value] of [
-    ['package.json', '{"packageManager":"pnpm@10.0.0"}'],
+    ['package.json', '{"packageManager":"pnpm@12.0.0"}'],
     ['pnpm-workspace.yaml', 'packages: [games/*, packages/*, services/*]'],
     ['pnpm-lock.yaml', 'Updated dependency resolution'],
   ]) {
