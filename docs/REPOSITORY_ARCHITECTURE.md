@@ -68,6 +68,21 @@ games.json              Catalogue: game identity, source and public route
 index.html              Collection dashboard
 ```
 
-[`games.json`](../games.json) drives [`scripts/build-collection.mjs`](../scripts/build-collection.mjs): built games supply static `dist/` outputs; plain browser games supply their source files. The root [`Dockerfile`](../Dockerfile) builds games in separate cached stages, then packages their outputs with the server in one image. [`docker-compose.local.yml`](../docker-compose.local.yml) builds this deployment from source. Source folders and public routes are independent, so Snow Drift still uses `/snow_drift/`. See [Adding a game](ADDING_A_GAME.md) for the integration contract.
+[`games.json`](../games.json) drives [`scripts/build-collection.mjs`](../scripts/build-collection.mjs): built games supply static `dist/` outputs; plain browser games supply their source files. Source folders and public routes are independent, so Snow Drift still uses `/snow_drift/`.
+
+Pinball has an independent [game image build](../games/pinball/Dockerfile). Its artifact image contains static files at `/dist`; the collection copies them during its build, so Pinball adds no runtime container:
+
+```mermaid
+flowchart LR
+  Source["Pinball source + Emscripten"] --> Artifact["Pinball artifact image<br/>Static /dist"]
+  Artifact --> Collection["Collection image<br/>Other games + shared Node server"]
+  Artifact --> Pages["Pages package<br/>Runtime API configuration"]
+  Other["Other game builds + dashboard"] --> Collection
+  Other --> Pages
+```
+
+One reusable [game image workflow](../.github/workflows/game-images.yml) discovers every `games/*/Dockerfile`, fingerprints its committed game and shared inputs plus build arguments, and compares that fingerprint with the current GHCR `latest` image. It reuses matching artifacts, builds changed or missing versions in parallel, and returns a map of immutable image digests to both hosting workflows. Per-game locks coordinate concurrent callers; only the current default-branch HEAD updates artifact `latest` tags. Future games need no separate workflow. Optional `image-build.json` files declare extra inputs and configurable arguments.
+
+Pages automatically extracts registered artifact games and skips their source builds. The root [Dockerfile](../Dockerfile) copies Pinball's artifact and retains cached stages for other compiled games; consuming another artifact there requires adding its image argument and output copy. A manual forced game-image run refreshes all artifacts, including base images or external resources; the collection or Pages must then be rebuilt to include them. [Local Compose](../docker-compose.local.yml) selects Pinball's artifact with `PINBALL_IMAGE` or `PINBALL_IMAGE_TAG`; [Adding a game](ADDING_A_GAME.md) describes the build contracts.
 
 Sea Strike's historical phase and ticket documents use `app/` and `relay/`; these now map to `games/sea-strike/` and `services/game-server/` respectively.

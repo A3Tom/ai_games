@@ -16,7 +16,7 @@ docker run -d --name ai-games --restart unless-stopped --pull always -p 14650:14
 
 Open <http://localhost:14650>. The dashboard links to Multiplayer Lab, Dots & Boxes, Minesweeper, Snow Drift, Space Cadet Pinball, and Sea Strike. No local Node installation or separate Vite process is needed.
 
-Space Cadet Pinball runs the C++/SDL2 [SpaceCadetPinball engine](./games/pinball/vendor/) through WebAssembly and saves its top ten scores on the server. Builds download and verify the same game resource archive used by the Flatpak package, so the hosted game is ready to play. Resources stay outside Git; see the [pinball setup guide](./games/pinball/README.md) for provenance, custom resources, and builds without bundled data. The `ai-games-data` volume above preserves scores when the container is replaced. Compose configures its own named `pinball-data` volume; `docker compose down` keeps it, while `docker compose down -v` deletes it. Without a volume, scores survive a process restart but disappear when the container is removed. Scores are reported by the browser for casual play.
+Space Cadet Pinball runs the C++/SDL2 [SpaceCadetPinball engine](./games/pinball/vendor/) through WebAssembly and saves its top ten scores on the server. Its independent build downloads and verifies the same game resource archive used by the Flatpak package, then publishes the ready-to-serve game in `ghcr.io/a3tom/ai_games-pinball`. Collection builds copy that artifact into the main image. Resources stay outside Git; see the [pinball setup guide](./games/pinball/README.md) for provenance, custom resources, and builds without bundled data. The `ai-games-data` volume above preserves scores when the container is replaced. Compose configures its own named `pinball-data` volume; `docker compose down` keeps it, while `docker compose down -v` deletes it. Without a volume, scores survive a process restart but disappear when the container is removed. Scores are reported by the browser for casual play.
 
 To share it with another device on your network, open `http://<your-computer-LAN-IP>:14650` on that device, for example `http://192.168.1.20:14650`. On Linux, `hostname -I` lists your machine's addresses; choose the one for your Ethernet or Wi-Fi network. On Windows, use `ipconfig`; on macOS, look in Network settings.
 
@@ -38,7 +38,7 @@ Use `-p 14651:14650` in the run command if host port 14650 is occupied. The dash
 
 If you prefer Compose, copy [`docker-compose.yml`](./docker-compose.yml) to your host and run `docker compose up -d --pull always --wait`. It runs the same single image. Use `docker compose logs -f` and `docker compose down` to view logs and stop it. Configure `HOST_PORT`, relay limits, and `IMAGE_TAG` through a `.env` file beside the manifest.
 
-To build and test your current source code, use the standalone [`docker-compose.local.yml`](./docker-compose.local.yml):
+To build the collection from local source with the published Pinball artifact, use [`docker-compose.local.yml`](./docker-compose.local.yml):
 
 ```bash
 docker compose -f docker-compose.local.yml up --build -d
@@ -46,7 +46,16 @@ docker compose -f docker-compose.local.yml up --build -d
 VITE_RELAY_URL=ws://localhost:14650/relay npm run dev --prefix games/playground
 ```
 
-The local dashboard, games, and relay share port 14650. Browser files in the container are production builds; rerun `docker compose -f docker-compose.local.yml up --build -d` after changing source files.
+The local dashboard, games, and relay share port 14650. Browser files in the container are production builds; rerun `docker compose -f docker-compose.local.yml up --build -d` after changing source files. Pinball's image is only a build input; the running collection remains one service.
+
+To include local Pinball changes, build its artifact first, then rebuild the collection using BuildKit:
+
+```bash
+docker build -f games/pinball/Dockerfile -t ai-games-pinball:local .
+PINBALL_IMAGE=ai-games-pinball:local docker compose -f docker-compose.local.yml up --build -d
+```
+
+The default artifact is `ghcr.io/${GHCR_REPOSITORY:-a3tom/ai_games}-pinball:latest`. Set `PINBALL_IMAGE_TAG` to choose a tag, or `PINBALL_IMAGE` for an exact tag or digest. `PINBALL_PLATFORM` defaults to `linux/amd64`, the artifact's published platform. A local build needs access to the artifact package when it is private; see [Hosting](#hosting).
 
 Use the same local file when checking logs or stopping the stack:
 
@@ -177,19 +186,23 @@ From the repository root, install dependencies, build registered games, and pack
 node scripts/build-collection.mjs --install --build
 ```
 
-This writes `deploy/`. Thereafter, use `npm run build:collection` to rebuild games or `npm run package:collection` to assemble existing outputs. The catalogue drives the dashboard and Pages build. The Dockerfile has a cached build stage for each compiled game; add its stage when registering a new compiled game.
+This builds every game from source and writes `deploy/`. Thereafter, use `npm run build:collection` to rebuild source or `npm run package:collection` to assemble existing outputs. The catalogue drives the dashboard and direct builds. Docker builds ordinary apps in cached stages and copies Pinball from its independently published image; [Adding a game](./docs/ADDING_A_GAME.md) describes both patterns.
 
-Pinball also requires Emscripten 4.0.23 to compile its C++ engine when generated artifacts are absent or out of date. Docker and the Pages workflow provide this toolchain; for direct local builds, activate an [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html) installation before running the collection script. Builds also download and checksum-verify game resources unless a valid imported bundle exists or `PINBALL_SKIP_RESOURCE_DOWNLOAD=1` is set. See [`games/pinball/README.md`](./games/pinball/README.md) for game data and engine build instructions.
+An all-source build requires Emscripten 4.0.23 when Pinball's generated engine is absent or out of date. Its [game Dockerfile](./games/pinball/Dockerfile) provides this toolchain. To reuse an extracted artifact already staged in `games/pinball/dist/`, run `node scripts/build-collection.mjs --install --build --skip-build=pinball`; this still installs Pinball's dependencies for tests. See [`games/pinball/README.md`](./games/pinball/README.md) for artifact extraction, engine and game-data instructions.
 
 ## Hosting
 
 ### Pull and run from GHCR
 
-The [GHCR workflow](./.github/workflows/ghcr.yml) publishes one image, `ghcr.io/a3tom/ai_games`, containing the dashboard, every registered game, and the multiplayer relay. A single Node process serves the collection and WebSocket connections on port 14650.
+The [GHCR workflow](./.github/workflows/ghcr.yml) publishes `ghcr.io/a3tom/ai_games`, containing the dashboard, every registered game, and the multiplayer relay. A single Node process serves the collection and WebSocket connections on port 14650.
+
+GHCR publishing and Pages first call [Build game artifact images](./.github/workflows/game-images.yml). This single workflow discovers `games/*/Dockerfile` and publishes each artifact as `ghcr.io/<owner>/<repository>-<game>`. It compares a fingerprint of committed game sources, shared code and build options with the current `latest` image, reuses matching artifacts, and builds changed or missing versions in parallel. Both hosting builds receive immutable image digests; Pages automatically extracts registered artifact games before packaging. [Adding a game](./docs/ADDING_A_GAME.md) describes optional build inputs and arguments.
+
+Run **Build game artifact images** manually with `force_rebuild` to refresh all artifacts, including updated base images or external resources whose changes do not affect the source fingerprint. Rebuild the collection or rerun Pages afterward to include refreshed artifacts. Only the current default-branch HEAD advances artifact `latest` tags; source-fingerprint tags also preserve reuse of identical earlier inputs.
 
 The workflow builds natively for Linux AMD64 with a 15-minute timeout. Pushes to `master` publish `latest`; `v*` Git tags publish matching image tags, such as `v1.2.3`. Every run also publishes `sha-<full-commit-sha>`. You can run **Publish image to GHCR** manually from the repository's Actions tab; only builds from `master` update `latest`.
 
-Publishing uses the workflow's automatic `GITHUB_TOKEN` with `packages: write`; no additional registry secret is needed. After the first successful run, the package appears under the repository owner's **Packages**. [GHCR packages start private](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry). Make the package public for anonymous pulls, or log in on the deployment host with a personal access token (classic) that has `read:packages` and access to the package:
+Publishing uses the workflow's automatic `GITHUB_TOKEN` with `packages: write`; no additional registry secret is needed. After the first successful run, the collection and Pinball artifact appear under the repository owner's **Packages**. [GHCR packages start private](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry). Make each package public for anonymous pulls, or log in with a personal access token (classic) that has `read:packages` and access to the required packages. Pulling the ready-made collection needs only its package; building it locally also needs the Pinball package:
 
 ```bash
 # For a private package, enter your GitHub username and use the token as the password:
@@ -226,7 +239,7 @@ The collection is configured for <https://a3tom.github.io/ai_games/>; the lab's 
 
 Pages hosts static files, so deploy the relay separately as a long-running WebSocket service. Set the GitHub repository Actions variable `VITE_RELAY_URL` to its `wss://` endpoint before building; this configures all multiplayer apps. Alternatively, enter the endpoint in the lab or Dots & Boxes. No relay is provisioned by the Pages workflow.
 
-For pinball scores on Pages, set the Actions variable `VITE_PINBALL_API_URL` to the relay's HTTPS API base, such as `https://relay.example.com/api/pinball`, and set the relay's `PINBALL_ALLOWED_ORIGINS=https://a3tom.github.io`. An origin has no path, so omit `/ai_games/` from that allowlist. Rebuild the collection after changing the frontend variable. The reverse proxy must forward `/api/pinball/*` to the relay. An unavailable score API does not prevent playing. The Pages workflow compiles the engine with Emscripten 4.0.23 and downloads verified game resources by default. Set the Actions variable `PINBALL_SKIP_RESOURCE_DOWNLOAD=1` for a deployment where visitors select their own resource folder.
+For pinball scores on Pages, set the Actions variable `VITE_PINBALL_API_URL` to the relay's HTTPS API base, such as `https://relay.example.com/api/pinball`, and set the relay's `PINBALL_ALLOWED_ORIGINS=https://a3tom.github.io`. An origin has no path, so omit `/ai_games/` from that allowlist. Pages extracts `/dist` from the Pinball image and writes this URL into `runtime-config.js` before packaging; the frontend and engine are reused without recompilation. Rerun Pages after changing the variable. The reverse proxy must forward `/api/pinball/*` to the relay. An unavailable score API does not prevent playing. Set the Actions variable `PINBALL_SKIP_RESOURCE_DOWNLOAD=1` to select an artifact where visitors supply their own resource folder.
 
 For HTTPS hosting of the container, place your TLS reverse proxy in front of port 14650 and pass WebSocket upgrades. The browser automatically selects `wss://` on HTTPS pages.
 

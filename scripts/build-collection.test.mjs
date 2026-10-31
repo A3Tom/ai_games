@@ -108,3 +108,43 @@ test('leaves the previous output intact if a game build is missing', async () =>
   assert.throws(() => execFileSync(process.execPath, [path.join(root, 'scripts/build-collection.mjs')], { stdio: 'pipe' }))
   assert.equal(await readFile(path.join(root, 'deploy/example/index.html'), 'utf8'), 'Previous build')
 })
+
+test('builds source games while packaging an explicitly prebuilt game', async () => {
+  const root = await collectionFixture()
+  await writeFile(path.join(root, 'games/example/package.json'), JSON.stringify({
+    scripts: { build: 'node -e "process.exit(42)"' },
+  }))
+  await mkdir(path.join(root, 'games/other/dist'), { recursive: true })
+  await writeFile(path.join(root, 'games/other/package.json'), JSON.stringify({
+    scripts: { build: 'node build.mjs' },
+  }))
+  await writeFile(path.join(root, 'games/other/build.mjs'),
+    "import { writeFileSync } from 'node:fs'; writeFileSync('dist/index.html', 'Fresh build')")
+  const games = JSON.parse(await readFile(path.join(root, 'games.json'), 'utf8'))
+  games.push(entry({ id: 'other', path: 'other', source: 'games/other' }))
+  await writeFile(path.join(root, 'games.json'), JSON.stringify(games))
+
+  execFileSync(process.execPath, [path.join(root, 'scripts/build-collection.mjs'), '--build', '--skip-build=example'])
+
+  assert.equal(await readFile(path.join(root, 'deploy/example/index.html'), 'utf8'), 'Built game')
+  assert.equal(await readFile(path.join(root, 'deploy/other/index.html'), 'utf8'), 'Fresh build')
+})
+
+test('rejects unknown and plain game build exclusions', async () => {
+  const root = await collectionFixture()
+  for (const id of ['typo', 'snow-drift', '']) {
+    assert.throws(() => execFileSync(process.execPath,
+      [path.join(root, 'scripts/build-collection.mjs'), `--skip-build=${id}`], { stdio: 'pipe' }),
+    /Cannot skip build/)
+  }
+})
+
+test('a skipped game still needs valid prebuilt output before replacing the collection', async () => {
+  const root = await collectionFixture()
+  await mkdir(path.join(root, 'deploy/example'), { recursive: true })
+  await writeFile(path.join(root, 'deploy/example/index.html'), 'Previous build')
+  await rm(path.join(root, 'games/example/dist/index.html'))
+  assert.throws(() => execFileSync(process.execPath,
+    [path.join(root, 'scripts/build-collection.mjs'), '--build', '--skip-build=example'], { stdio: 'pipe' }))
+  assert.equal(await readFile(path.join(root, 'deploy/example/index.html'), 'utf8'), 'Previous build')
+})

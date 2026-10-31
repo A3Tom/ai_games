@@ -2,19 +2,31 @@ import { cp, mkdir, readFile, rm } from 'node:fs/promises'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { parseArgs } from 'node:util'
 
 import { assertCollectionOutput, readGames } from './game-registry.mjs'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
-const args = process.argv.slice(2)
-const flags = new Set(args.filter((arg) => arg.startsWith('--')))
-const targets = args.filter((arg) => !arg.startsWith('--'))
-if (targets.length > 1 || [...flags].some((flag) => !['--install', '--build'].includes(flag))) {
-  throw new Error('Usage: node scripts/build-collection.mjs [--install] [--build] [output-directory]')
+const { values: flags, positionals: targets } = parseArgs({
+  options: {
+    install: { type: 'boolean' },
+    build: { type: 'boolean' },
+    'skip-build': { type: 'string', multiple: true },
+  },
+  allowPositionals: true,
+})
+if (targets.length > 1) {
+  throw new Error('Usage: node scripts/build-collection.mjs [--install] [--build] [--skip-build=id[,id]] [output-directory]')
 }
 const output = path.resolve(root, targets[0] ?? 'deploy')
 const games = await readGames(root)
 await assertCollectionOutput(root, output, games)
+const skippedBuilds = new Set((flags['skip-build'] ?? []).flatMap((value) => value.split(',')))
+for (const id of skippedBuilds) {
+  if (!games.some((game) => game.id === id && game.build)) {
+    throw new Error(`Cannot skip build for unregistered or plain game: ${id}`)
+  }
+}
 
 function run(game, command) {
   console.log(`${game.title}: npm ${command.join(' ')}`)
@@ -27,8 +39,12 @@ function run(game, command) {
 }
 
 for (const game of games.filter((game) => game.build)) {
-  if (flags.has('--install')) run(game, ['ci', '--no-audit', '--no-fund'])
-  if (flags.has('--build')) run(game, ['run', 'build'])
+  // Dependencies are still installed for tests when a prebuilt game is used.
+  if (flags.install) run(game, ['ci', '--no-audit', '--no-fund'])
+  if (flags.build) {
+    if (skippedBuilds.has(game.id)) console.log(`${game.title}: using prebuilt dist/`)
+    else run(game, ['run', 'build'])
+  }
 }
 
 // Validate every entry before replacing any previous collection output.

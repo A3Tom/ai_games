@@ -1,0 +1,8 @@
+{
+  "buildArgs": {
+    "PINBALL_SKIP_RESOURCE_DOWNLOAD": {
+      "variable": "PINBALL_SKIP_RESOURCE_DOWNLOAD",
+      "default": "0"
+    }
+  }
+}

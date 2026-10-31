@@ -39,7 +39,34 @@ Vite bundles that source import. A plain browser page deployed one level below t
 
 Keep native port details local to the game: `engine/` for browser adaptations, `vendor/` for upstream code and notices, `scripts/` for compilation and resource preparation, and `public/` for runtime assets. Record the toolchain version and resource provenance in the game's README. Ignore generated artifacts, and make the game build prepare or verify them before bundling. [Pinball](../games/pinball/README.md) is the reference.
 
-Add a cached per-game build stage to the root [Dockerfile](../Dockerfile) and copy its output into the collection assembly stage. Install dependencies before copying frequently changing source; isolate native compilation from the browser UI build. For a different native toolchain, configure its setup in [Pages CI](../.github/workflows/deploy.yml) as well. For a plain browser game, add a source `COPY` to the collection assembly stage. Docker uses explicit copies to preserve cache isolation; the direct collection script and Pages build discover games through the registry.
+For ordinary web apps, add a cached build stage and output `COPY` to the root [Dockerfile](../Dockerfile). Install dependencies before copying frequently changing source. For a plain browser game, add a source `COPY` to the collection assembly stage. The direct collection script discovers both through the registry.
+
+Any game can use an independent artifact image, including expensive native ports:
+
+1. Add `games/<id>/Dockerfile`, built with the repository root as context. Compile the engine separately from the interface and resources; its final artifact image exposes the complete static site at `/dist`.
+2. The shared [game image workflow](../.github/workflows/game-images.yml) discovers the Dockerfile automatically and publishes `ghcr.io/<owner>/<repository>-<id>`. No per-game workflow is needed. It fingerprints committed game files, `shared/`, `packages/`, `.dockerignore`, the shared build workflow/tooling, and resolved build arguments. If the Dockerfile copies other repository inputs, declare them in the optional `games/<id>/image-build.json` below.
+3. Copy `/dist` from the artifact into the root collection Dockerfile and pass its digest from the GHCR workflow's returned image map, following Pinball's `PINBALL_IMAGE` argument. Pages automatically extracts registered artifact games before packaging and skips their source builds. Keep hosting-specific settings in a small runtime configuration file so both consumers can reuse one frontend build.
+
+For example, an optional `image-build.json` can declare extra repository-relative inputs and Docker build arguments:
+
+```json
+{
+  "inputs": ["scripts/my-game-assets.mjs"],
+  "buildArgs": {
+    "ASSET_FORMAT": "webp",
+    "SKIP_RESOURCE_DOWNLOAD": {
+      "variable": "MY_GAME_SKIP_RESOURCE_DOWNLOAD",
+      "default": "0"
+    }
+  }
+}
+```
+
+`variable` names a repository Actions variable; its value, or the fallback `default`, becomes the build argument and part of the fingerprint. Pinball's [configuration](../games/pinball/image-build.json) preserves the existing `PINBALL_SKIP_RESOURCE_DOWNLOAD` variable. Do not put secrets in build arguments.
+
+The workflow compares the fingerprint with a label on each current GHCR `latest` image. Matching images and identical historical `source-<fingerprint>` tags are reused by digest; missing or changed inputs are built in parallel. Only the current default-branch HEAD advances `latest`. Run **Build game artifact images** manually with `force_rebuild` to rebuild all discovered games when base images or external resources change without source changes.
+
+Artifact images are build inputs. The runtime remains one shared game server, with the existing observability and data volume. A forced artifact rebuild takes effect when the collection or Pages is rebuilt.
 
 ## Check and package
 
@@ -50,6 +77,8 @@ node scripts/build-collection.mjs --install --build
 npm run test:games
 ```
 
-The first command writes `deploy/`. It requires each native game's toolchain when valid generated artifacts are unavailable. After initial installation, use `npm run build:collection` to rebuild or `npm run package:collection` to package existing outputs. `npm test` also checks build tooling, the shared server and the multiplayer client. Registered npm games with a `test` script are discovered automatically.
+The first command builds all games from source and writes `deploy/`; it requires native toolchains when valid generated artifacts are unavailable. After initial installation, use `npm run build:collection` for source builds or `npm run package:collection` to package existing outputs. `npm test` also checks build tooling, the shared server and the multiplayer client. Registered npm games with a `test` script are discovered automatically.
+
+To reuse Pinball's artifact, first [extract its `/dist` output](../games/pinball/README.md#reuse-the-static-artifact) into `games/pinball/dist/`, then run `node scripts/build-collection.mjs --install --build --skip-build=pinball`. The skip flag preserves its prebuilt output while still installing dependencies for tests. Future independent games use the same flag with their registered ID.
 
 Open the game through the local Docker stack, or serve the staged collection with `STATIC_DIR="$PWD/deploy" npm run dev:server`. Check its public route, assets, shell navigation and telemetry. For plain browser games, rerun `npm run package:collection` after source edits. Include game-specific setup and verification steps in its README.

@@ -12,6 +12,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+function configuredApiBase(): string {
+  const config: unknown = Reflect.get(globalThis, 'AI_GAMES_PINBALL_CONFIG')
+  const runtimeBase = isRecord(config) && typeof config.apiUrl === 'string' ? config.apiUrl.trim() : ''
+  return runtimeBase || import.meta.env.VITE_PINBALL_API_URL?.trim() || '/api/pinball'
+}
+
 function parseEntry(value: unknown): ScoreEntry {
   if (
     !isRecord(value) ||
@@ -49,7 +55,7 @@ function parseScores(value: unknown): ScoreEntry[] {
 export class LeaderboardApi {
   private readonly base: string
 
-  constructor(base = import.meta.env.VITE_PINBALL_API_URL || '/api/pinball') {
+  constructor(base = configuredApiBase()) {
     this.base = base.trim().replace(/\/+$/, '') || '/api/pinball'
   }
 

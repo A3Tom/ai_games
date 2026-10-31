@@ -23,7 +23,7 @@ npm ci --prefix games/pinball
 node games/pinball/scripts/fetch-resources.mjs
 ```
 
-Set `PINBALL_SKIP_RESOURCE_DOWNLOAD=1` to build without downloading resources. If no bundle is present, players can select a resource folder in the browser. Selected files are loaded into browser memory; the leaderboard server receives scores, not those files. Select the folder again after reloading the page. For Docker, pass `--build-arg PINBALL_SKIP_RESOURCE_DOWNLOAD=1` to `docker build`; for Pages, set the repository Actions variable with the same name. This skips downloading and preserves any existing imported bundle; remove `games/pinball/public/game-data/` before building if you also want to exclude a local bundle.
+Set `PINBALL_SKIP_RESOURCE_DOWNLOAD=1` for a source build without downloading resources. If no bundle is present, players can select a resource folder in the browser. Selected files are loaded into browser memory; the leaderboard server receives scores, not those files. Select the folder again after reloading the page. For the independent game image, pass `--build-arg PINBALL_SKIP_RESOURCE_DOWNLOAD=1` to `docker build -f games/pinball/Dockerfile`; the root collection Dockerfile consumes its prepared output. For hosted builds, set the repository Actions variable with the same name; [image-build.json](./image-build.json) passes it through the shared game image workflow. Skipping downloads preserves any existing imported bundle; remove `games/pinball/public/game-data/` before building if you also want to exclude a local bundle.
 
 You can also mount an imported bundle into an existing container. Create a `docker-compose.pinball-data.yml` file beside the local Compose manifest:
 
@@ -44,13 +44,20 @@ The bind-mounted directory must contain the generated manifest and its resource 
 
 ## Run locally
 
-Docker compiles the engine using Emscripten 4.0.23 and builds the complete collection:
+The local collection build reuses the published Pinball artifact:
 
 ```bash
 docker compose -f docker-compose.local.yml up --build -d
 ```
 
-Open <http://localhost:14650/pinball/> and start a game. The default build includes the verified resource bundle.
+Open <http://localhost:14650/pinball/> and start a game. The default artifact includes the verified resource bundle. To include local Pinball changes, build its independent image first, then rebuild the collection using BuildKit:
+
+```bash
+docker build -f games/pinball/Dockerfile -t ai-games-pinball:local .
+PINBALL_IMAGE=ai-games-pinball:local docker compose -f docker-compose.local.yml up --build -d
+```
+
+The [game Dockerfile](./Dockerfile) supplies Emscripten 4.0.23 and caches engine compilation, dependency installation and resource preparation separately. Its final scratch image contains only the website at `/dist`; it is copied into the collection at build time. The runtime still has one Node service and the existing score volume. `PINBALL_IMAGE_TAG` chooses a published tag, `PINBALL_IMAGE` accepts an exact image or digest, and `PINBALL_PLATFORM` defaults to the published artifact's `linux/amd64` platform.
 
 For development without Docker, install and activate [Emscripten SDK 4.0.23](https://emscripten.org/docs/getting_started/downloads.html), then run these commands from the collection root:
 
@@ -78,6 +85,26 @@ npm test --prefix games/pinball
 npm run build --prefix games/pinball
 ```
 
+## Reuse the static artifact
+
+The reusable/manual [game image workflow](../../.github/workflows/game-images.yml) discovers Pinball's Dockerfile alongside any other game Dockerfiles and publishes `ghcr.io/a3tom/ai_games-pinball`. Its fingerprint includes committed Pinball sources, `shared/`, `packages/`, `.dockerignore`, the shared workflow/tooling and the resolved resource-download option from [image-build.json](./image-build.json). It compares the fingerprint with the current `latest` image and reuses matching artifacts, including historical source-fingerprint tags. Both collection publishing and Pages receive the immutable digest.
+
+Run **Build game artifact images** manually with `force_rebuild` to refresh all game artifacts explicitly, including updated base images or external resources. Rebuild the collection or rerun Pages afterward to include the refreshed artifact. Only the current default-branch HEAD updates artifact `latest` tags.
+
+To extract an image without running it:
+
+```bash
+pinball_image=ghcr.io/a3tom/ai_games-pinball:latest
+docker pull --platform linux/amd64 "$pinball_image"
+pinball_container="$(docker create "$pinball_image" /artifact-only)"
+mkdir -p games/pinball/dist
+docker cp "$pinball_container:/dist/." games/pinball/dist/
+docker rm "$pinball_container"
+node scripts/build-collection.mjs --install --build --skip-build=pinball
+```
+
+Use a digest in place of `latest` to select an exact artifact. This skips engine and frontend compilation while still installing dependencies for game tests. Access to the Pinball package is required when it is private; see [collection hosting](../../README.md#hosting).
+
 ## Server scores
 
 The browser calls the same-origin `/api/pinball` API by default:
@@ -92,12 +119,28 @@ The relay writes scores atomically to `PINBALL_SCORES_FILE`, which defaults to `
 
 ## Separate static hosting
 
-GitHub Pages serves the compiled engine and game interface but cannot run its score server. Before building, set `VITE_PINBALL_API_URL` to a full HTTPS API base:
+GitHub Pages serves the compiled engine and game interface but cannot run its score server. The same prebuilt game can use an external score API by replacing its served `runtime-config.js`:
+
+```js
+globalThis.AI_GAMES_PINBALL_CONFIG = { apiUrl: 'https://relay.example.com/api/pinball' }
+```
+
+This file loads before the game starts and can be changed without recompiling the browser interface or WASM engine. The default file has an empty URL: the client falls back to `VITE_PINBALL_API_URL` from the build, then same-origin `/api/pinball`. An explicit `LeaderboardApi` constructor URL takes precedence over all configuration. Keep runtime settings public; credentials belong on the server.
+
+To configure an existing build safely from an environment variable, run:
+
+```bash
+VITE_PINBALL_API_URL=https://relay.example.com/api/pinball node games/pinball/scripts/configure-runtime.mjs
+```
+
+This updates `games/pinball/dist/runtime-config.js`; pass another built game directory as the final argument to configure an extracted artifact or staged copy. It checks that `index.html` exists before writing, and an unset variable writes the empty default.
+
+For a direct Vite build, the existing build-time setting remains supported:
 
 ```bash
 VITE_PINBALL_API_URL=https://relay.example.com/api/pinball npm run build --prefix games/pinball
 ```
 
-The Pages workflow takes this value from the repository Actions variable with the same name and installs Emscripten 4.0.23 for the engine build. It downloads and verifies the default game resources during the build. Set the Actions variable `PINBALL_SKIP_RESOURCE_DOWNLOAD=1` to deploy without downloading a resource bundle; visitors can then select their local resource folder.
+The Pages workflow takes this value from the repository Actions variable with the same name. It extracts the reusable image's `/dist`, runs the runtime configurator, then packages the collection without rebuilding Pinball. Set the Actions variable `PINBALL_SKIP_RESOURCE_DOWNLOAD=1` to select an artifact without a downloaded resource bundle; visitors can then select their local resource folder.
 
 Configure the relay with `PINBALL_ALLOWED_ORIGINS=https://a3tom.github.io` (or your site's origin), and forward `/api/pinball/*` through its HTTPS proxy. Use comma-separated origins for multiple sites, without URL paths. The engine uses one browser thread and does not require cross-origin isolation headers.

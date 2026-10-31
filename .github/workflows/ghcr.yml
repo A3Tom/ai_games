@@ -17,7 +17,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  games:
+    uses: ./.github/workflows/game-images.yml
+
   publish:
+    needs: games
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -66,5 +70,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            PINBALL_IMAGE=${{ fromJSON(needs.games.outputs.images).pinball }}
           cache-from: type=gha,scope=collection
           cache-to: type=gha,mode=max,scope=collection

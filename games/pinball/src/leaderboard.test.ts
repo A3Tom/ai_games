@@ -49,6 +49,42 @@ describe('LeaderboardApi', () => {
     expect(fetchMock.mock.calls[1][0]).toBe('https://other.example/api/pinball/scores')
   })
 
+  it('uses runtime configuration ahead of build-time configuration', async () => {
+    vi.stubEnv('VITE_PINBALL_API_URL', 'https://build.example/api/pinball')
+    vi.stubGlobal('AI_GAMES_PINBALL_CONFIG', { apiUrl: ' https://runtime.example/api/pinball/// ' })
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(json({ scores: [] })))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await new LeaderboardApi().list()
+    expect(fetchMock.mock.calls[0][0]).toBe('https://runtime.example/api/pinball/scores')
+
+    await new LeaderboardApi('https://explicit.example/api/pinball').list()
+    expect(fetchMock.mock.calls[1][0]).toBe('https://explicit.example/api/pinball/scores')
+  })
+
+  it.each([undefined, {}, { apiUrl: '' }, { apiUrl: '   ' }, { apiUrl: 123 }])(
+    'falls back to build-time configuration when runtime configuration has no URL (%j)',
+    async (config) => {
+      vi.stubGlobal('AI_GAMES_PINBALL_CONFIG', config)
+      vi.stubEnv('VITE_PINBALL_API_URL', ' https://build.example/api/pinball/ ')
+      const fetchMock = vi.fn().mockResolvedValue(json({ scores: [] }))
+      vi.stubGlobal('fetch', fetchMock)
+
+      await new LeaderboardApi().list()
+      expect(fetchMock.mock.calls[0][0]).toBe('https://build.example/api/pinball/scores')
+    },
+  )
+
+  it('keeps the same-origin default when runtime and build-time URLs are blank', async () => {
+    vi.stubGlobal('AI_GAMES_PINBALL_CONFIG', { apiUrl: '' })
+    vi.stubEnv('VITE_PINBALL_API_URL', '   ')
+    const fetchMock = vi.fn().mockResolvedValue(json({ scores: [] }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await new LeaderboardApi().list()
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/pinball/scores')
+  })
+
   it('creates a game with JSON and submits the supplied run, name and score', async () => {
     const savedEntry = { ...entry, id: 'run-123' }
     const fetchMock = vi
