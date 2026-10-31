@@ -74,6 +74,9 @@ importers:
       fflate:
         specifier: ^0.8.3
         version: 0.8.3
+      jsdom:
+        specifier: ^28.0.0
+        version: 28.0.0
       typescript:
         specifier: ^5.7.3
         version: 5.9.3
