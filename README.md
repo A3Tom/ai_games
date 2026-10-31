@@ -4,6 +4,8 @@ A workshop for small browser games built with coding agents. Keep each game focu
 
 Every app, including **Multiplayer Lab**, is listed on one dashboard. One Docker image runs the whole collection and the multiplayer relay together.
 
+See the [repository architecture](./docs/REPOSITORY_ARCHITECTURE.md) for a high-level diagram of the games, relay, and observability.
+
 ## Run the collection
 
 After the [GHCR workflow](./.github/workflows/ghcr.yml) has published the image, run this command on any Linux AMD64 host with Docker (see [Hosting](#hosting) for registry authentication):

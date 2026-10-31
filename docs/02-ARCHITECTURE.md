@@ -2,31 +2,9 @@
 
 ## 1. System Overview
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        GitHub Pages                             │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │  Vue 3 SPA (Static Build)                                │  │
-│  │  ┌──────────┐ ┌──────────┐ ┌───────────┐ ┌────────────┐ │  │
-│  │  │  Router   │ │  Pinia   │ │Composables│ │ Components │ │  │
-│  │  │(hash mode)│ │  Stores  │ │ usePeer   │ │  GameBoard │ │  │
-│  │  │          │ │  game.ts │ │ useCrypto │ │  Lobby     │ │  │
-│  │  │          │ │ conn.ts  │ │ useRelay  │ │  Setup     │ │  │
-│  │  └──────────┘ └──────────┘ └─────┬─────┘ └────────────┘ │  │
-│  └──────────────────────────────────┼───────────────────────┘  │
-└─────────────────────────────────────┼──────────────────────────┘
-                                      │ WSS
-┌─────────────────────────────────────┼──────────────────────────┐
-│                          VPS (Docker)                          │
-│  ┌──────────┐    ┌──────────────────┴───────────────────────┐  │
-│  │  Caddy   │───▶│  Relay Container (Node/Bun)              │  │
-│  │ :443 TLS │    │  - WebSocket upgrade                     │  │
-│  │          │    │  - Room-based message routing             │  │
-│  └──────────┘    │  - No game logic, no persistence         │  │
-│                  │  - Health check endpoint                  │  │
-│                  └──────────────────────────────────────────┘  │
-└────────────────────────────────────────────────────────────────┘
-```
+This document covers Sea Strike's browser application in [`app/`](../app/). See [Repository Architecture](./REPOSITORY_ARCHITECTURE.md) for the collection diagram, shared services, and observability flow.
+
+Sea Strike is a Vue SPA: each browser owns its game rules, board state, and cryptographic verification. Its `useRelay` composable uses the relay's legacy two-player WebSocket protocol to exchange messages. In the collection deployment, one Node service on port **14650** serves all game files and hosts the shared relay, telemetry collector, metrics exporter, and Pinball API. Sea Strike rooms and membership live in memory; game state stays in the browsers.
 
 ---
 
@@ -248,7 +226,7 @@ interface ConnectionState {
 | Player refuses to reveal board | Treated as forfeit; opponent wins by default |
 | Relay tampers with messages | Relay is under your control; messages could be signed client-side in future |
 | Room ID guessing | Room IDs are 8+ character random strings (nanoid); 36^8 = ~2.8 trillion possibilities |
-| DoS on relay | Rate limiting per IP at Caddy level; room cap in relay |
+| DoS on relay | Per-connection message rate and size limits; room cap in relay |
 
 ### 5.2 Commit-Reveal Implementation
 
@@ -288,141 +266,9 @@ interface BoardCommitment {
 
 ## 6. Infrastructure
 
-### 6.1 VPS — Docker Compose
+The root [Dockerfile](../Dockerfile) packages the registered games and dashboard with the relay in one image. [docker-compose.yml](../docker-compose.yml) runs that image; [docker-compose.local.yml](../docker-compose.local.yml) builds it from source. Sea Strike connects to same-origin `/relay`, using `ws://` over HTTP or `wss://` over HTTPS. Playing from another device requires trusted HTTPS for Web Crypto.
 
-```yaml
-# docker-compose.yml
-version: "3.8"
-
-services:
-  relay:
-    build: ./relay
-    restart: unless-stopped
-    expose:
-      - "8080"
-    environment:
-      - PORT=8080
-      - MAX_ROOMS=100
-      - MAX_CLIENTS_PER_ROOM=2
-      - ROOM_TIMEOUT_MS=3600000    # 1 hour
-      - LOG_LEVEL=info
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-          cpus: "0.25"
-    networks:
-      - caddy_network
-
-networks:
-  caddy_network:
-    external: true
-```
-
-### 6.2 VPS — Caddyfile
-
-```
-relay.yourdomain.com {
-    reverse_proxy relay:8080
-
-    # Rate limiting (optional, requires caddy-ratelimit plugin)
-    # rate_limit {remote.ip} 30r/m
-}
-```
-
-Caddy automatically provisions and renews TLS certificates via Let's Encrypt. No manual cert management needed.
-
-### 6.3 Relay Dockerfile
-
-```dockerfile
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
-FROM node:20-alpine
-WORKDIR /app
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./
-EXPOSE 8080
-HEALTHCHECK CMD curl -f http://localhost:8080/health || exit 1
-USER node
-CMD ["node", "dist/server.js"]
-```
-
-### 6.4 GitHub Pages — Deployment
-
-```yaml
-# .github/workflows/deploy.yml
-name: Deploy to GitHub Pages
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./app
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: app/package-lock.json
-      - run: npm ci
-      - run: npm run type-check
-      - run: npm run lint
-      - run: npm run build
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: app/dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
-```
-
-### 6.5 Environment Configuration
-
-```bash
-# app/.env.example
-VITE_RELAY_URL=wss://relay.yourdomain.com
-VITE_ROOM_ID_LENGTH=8
-
-# relay/.env.example
-PORT=8080
-MAX_ROOMS=100
-MAX_CLIENTS_PER_ROOM=2
-ROOM_TIMEOUT_MS=3600000
-LOG_LEVEL=info
-```
+For the deployment diagram and shared service boundaries, see [Repository Architecture](./REPOSITORY_ARCHITECTURE.md). Run commands, environment settings, and static hosting options are in the [README](../README.md#hosting).
 
 ---
 
@@ -470,48 +316,12 @@ If both players disconnect and reconnect, the first one to return waits. When th
 
 ## 9. Monitoring & Observability
 
-### 9.1 Relay
+The shared game shell initializes browser telemetry with `appId: "sea-strike"`. Page loads, load duration, browser errors, and custom game logs are batched to HTTP `/telemetry`, separately from WebSocket gameplay. The relay combines browser and server logs as structured JSON on stdout and exposes metrics at `/metrics`.
 
-- `/health` endpoint returns `{ status: "ok", rooms: <count>, connections: <count> }`.
-- Structured JSON logging to stdout (consumed by Docker logs / any log aggregator).
-- Log room creation, room deletion, peer join, peer leave, errors.
-
-### 9.2 Client
-
-- Connection state changes logged to browser console in development.
-- `ConnectionStatus.vue` component provides real-time visual feedback.
+The optional observability overlay adds VictoriaLogs for searchable logs and VictoriaMetrics for stored metrics. See [Repository Architecture](./REPOSITORY_ARCHITECTURE.md) for the flow and the [README](../README.md#observability) for configuration. `ConnectionStatus.vue` also shows connection state inside the game.
 
 ---
 
 ## 10. Repository Structure
 
-```
-sea-strike/
-├── app/                        # Vue 3 SPA (→ GitHub Pages)
-│   ├── src/
-│   ├── public/
-│   ├── package.json
-│   ├── vite.config.ts
-│   ├── tsconfig.json
-│   ├── tailwind.config.ts
-│   └── .env.example
-├── relay/                      # WebSocket relay (→ Docker on VPS)
-│   ├── src/
-│   ├── Dockerfile
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── .env.example
-├── docker-compose.yml
-├── .github/
-│   └── workflows/
-│       └── deploy.yml
-├── docs/
-│   ├── 01-PRD.md
-│   ├── 02-ARCHITECTURE.md
-│   ├── 03-CODING-STANDARDS.md
-│   ├── 04-AI-ASSISTANT-GUIDE.md
-│   └── 05-PROTOCOL-SPEC.md
-├── .gitignore
-├── README.md
-└── LICENSE
-```
+Sea Strike's frontend lives in [`app/`](../app/); its component layout is shown in section 2. The relay in [`relay/`](../relay/) and browser shell in [`shared/`](../shared/) serve the whole collection. See [Repository Architecture](./REPOSITORY_ARCHITECTURE.md) for the repository-wide boundaries.
