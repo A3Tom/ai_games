@@ -3,9 +3,12 @@ packages:
   - packages/*
   - services/*
 
-onlyBuiltDependencies:
-  - esbuild
-  - vue-demi
+# Preserve pnpm 10's release-age behavior for the committed dependency versions.
+minimumReleaseAge: 0
+
+allowBuilds:
+  esbuild: true
+  vue-demi: true
 
 # This release omits its Vue peer, which otherwise resolves through shared
 # hoisting and can load a different game's Vue runtime during tests.
