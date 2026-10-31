@@ -2,6 +2,8 @@
 
 This document provides explicit instructions for AI coding assistants working on this project. Follow these rules precisely.
 
+This guide and its original implementation sequence apply to Sea Strike. Current source lives in `games/sea-strike/`; the shared server lives in `services/game-server/`. Use [Repository Architecture](REPOSITORY_ARCHITECTURE.md) and [Adding a game](ADDING_A_GAME.md) for collection-wide work.
+
 ---
 
 ## 1. Project Context
@@ -72,9 +74,9 @@ Build the project in this exact sequence. Each phase should result in working, t
 
 ### Phase 1: Project Scaffolding
 
-1. Initialize the Vue 3 + TypeScript + Vite project in `app/`.
+1. Initialize the Vue 3 + TypeScript + Vite project in `games/sea-strike/`.
 2. Install dependencies: `vue-router`, `pinia`, `tailwindcss`, `nanoid`.
-3. Configure `vite.config.ts` with `base: '/<repo-name>/'` for GitHub Pages.
+3. Configure `vite.config.ts` with `base: './'` for collection subpaths and GitHub Pages.
 4. Configure Vue Router with `createWebHashHistory`.
 5. Set up Tailwind CSS.
 6. Set up ESLint + Prettier.
@@ -112,7 +114,7 @@ Build the project in this exact sequence. Each phase should result in working, t
 
 ### Phase 5: Relay Server
 
-1. Initialize the Node/Bun project in `relay/`.
+1. Initialize the Node/Bun project in `services/game-server/`.
 2. Implement `room-manager.ts`: room creation, join, leave, cleanup timer.
 3. Implement `server.ts`: WebSocket upgrade, message forwarding, health endpoint.
 4. Implement `health.ts`: `/health` route returning JSON status.

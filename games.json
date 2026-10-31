@@ -6,7 +6,7 @@
     "icon": "📡",
     "tags": ["Multiplayer", "Diagnostics"],
     "path": "playground",
-    "source": "playground",
+    "source": "games/playground",
     "build": true
   },
   {
@@ -16,7 +16,7 @@
     "icon": "🔷",
     "tags": ["2–4 players", "Strategy", "Touch friendly"],
     "path": "dots-and-boxes",
-    "source": "dots-and-boxes",
+    "source": "games/dots-and-boxes",
     "build": true
   },
   {
@@ -26,7 +26,7 @@
     "icon": "💣",
     "tags": ["Solo", "Puzzle"],
     "path": "minesweeper",
-    "source": "minesweeper",
+    "source": "games/minesweeper",
     "build": true
   },
   {
@@ -36,7 +36,7 @@
     "icon": "❄️",
     "tags": ["Solo", "Driving"],
     "path": "snow_drift",
-    "source": "snow_drift",
+    "source": "games/snow-drift",
     "build": false
   },
   {
@@ -46,7 +46,7 @@
     "icon": "🪐",
     "tags": ["Solo", "WebAssembly", "High scores"],
     "path": "pinball",
-    "source": "pinball",
+    "source": "games/pinball",
     "build": true
   },
   {
@@ -56,7 +56,7 @@
     "icon": "⚓",
     "tags": ["2 players", "Strategy", "HTTPS required on LAN"],
     "path": "sea-strike",
-    "source": "app",
+    "source": "games/sea-strike",
     "build": true
   }
 ]

@@ -27,21 +27,24 @@ jobs:
         with:
           node-version: '24'
 
+      - name: Check collection build tooling
+        run: npm run test:tooling
+
       - name: Install Emscripten 4.0.23
         run: |
           git clone --depth 1 https://github.com/emscripten-core/emsdk.git "$RUNNER_TEMP/emsdk"
           "$RUNNER_TEMP/emsdk/emsdk" install 4.0.23
           "$RUNNER_TEMP/emsdk/emsdk" activate 4.0.23
 
-      - name: Install relay and shared client dependencies
+      - name: Install server and shared client dependencies
         run: |
-          npm ci --prefix relay
+          npm ci --prefix services/game-server
           npm ci --prefix packages/multiplayer
 
       - name: Check multiplayer protocol and client
         run: |
-          npm test --prefix relay
-          npm run build --prefix relay
+          npm test --prefix services/game-server
+          npm run build --prefix services/game-server
           npm test --prefix packages/multiplayer
           npm run type-check --prefix packages/multiplayer
       
@@ -54,11 +57,8 @@ jobs:
           VITE_PINBALL_API_URL: ${{ vars.VITE_PINBALL_API_URL }}
           PINBALL_SKIP_RESOURCE_DOWNLOAD: ${{ vars.PINBALL_SKIP_RESOURCE_DOWNLOAD }}
 
-      - name: Check Dots and Boxes rules and synchronization
-        run: npm test --prefix dots-and-boxes
-
-      - name: Check pinball frontend and leaderboard
-        run: npm test --prefix pinball
+      - name: Check all registered games with tests
+        run: node scripts/test-games.mjs
       
       - name: Setup Pages
         uses: actions/configure-pages@v4

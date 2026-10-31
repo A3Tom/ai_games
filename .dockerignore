@@ -13,7 +13,7 @@ coverage
 **/coverage
 npm-debug.log*
 /data
-/relay/data
-/pinball/public/engine
-/pinball/.engine-build
+/services/game-server/data
+/games/pinball/public/engine
+/games/pinball/.engine-build
 **/npm-debug.log*

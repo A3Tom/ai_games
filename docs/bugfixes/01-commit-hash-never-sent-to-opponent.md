@@ -21,12 +21,12 @@ There is a broken handoff between `SetupPhase.vue` and `GameView.vue` for sendin
 
 ### The flow that executes today
 
-1. Player clicks "Ready" in `SetupPhase.vue` ([SetupPhase.vue:97-109](app/src/components/game/SetupPhase.vue#L97-L109)):
+1. Player clicks "Ready" in `SetupPhase.vue` ([SetupPhase.vue:97-109](../../games/sea-strike/src/components/game/SetupPhase.vue#L97-L109)):
    - `cryptoCommitBoard(myShips)` generates the SHA-256 hash and salt.
-   - `gameStore.commitBoard(hash, salt)` stores the hash/salt and transitions `phase` from `setup` to `commit` ([game.ts:94-99](app/src/stores/game.ts#L94-L99)).
+   - `gameStore.commitBoard(hash, salt)` stores the hash/salt and transitions `phase` from `setup` to `commit` ([game.ts:94-99](../../games/sea-strike/src/stores/game.ts#L94-L99)).
    - `emit('boardCommitted')` fires to the parent `GameView`.
 
-2. `GameView.vue` receives the event ([GameView.vue:53-55](app/src/views/GameView.vue#L53-L55)):
+2. `GameView.vue` receives the event ([GameView.vue:53-55](../../games/sea-strike/src/views/GameView.vue#L53-L55)):
    ```ts
    function handleBoardCommitted(): void {
      // Store has already transitioned to COMMIT phase; handler exists for future use
@@ -34,11 +34,11 @@ There is a broken handoff between `SetupPhase.vue` and `GameView.vue` for sendin
    ```
    **This is a no-op.** No relay message is sent.
 
-3. The opponent's `handleCommit` handler ([useGameProtocol.ts:94-99](app/src/composables/useGameProtocol.ts#L94-L99)) — which would store the opponent's hash and trigger `startBattle()` — is never invoked because no `commit` message ever arrives over the WebSocket.
+3. The opponent's `handleCommit` handler ([useGameProtocol.ts:94-99](../../games/sea-strike/src/composables/useGameProtocol.ts#L94-L99)) — which would store the opponent's hash and trigger `startBattle()` — is never invoked because no `commit` message ever arrives over the WebSocket.
 
 ### Why the no-op exists
 
-A TODO comment in `SetupPhase.vue` ([lines 103-104](app/src/components/game/SetupPhase.vue#L103-L104)) explains the conflict:
+A TODO comment in `SetupPhase.vue` ([lines 103-104](../../games/sea-strike/src/components/game/SetupPhase.vue#L103-L104)) explains the conflict:
 
 ```ts
 // TODO: TICKET CONFLICT — useGameProtocol requires (options: UseGameProtocolOptions) and cannot
@@ -49,7 +49,7 @@ The intent was for `GameView` to handle sending the commit via the protocol, but
 
 ### Duplication issue
 
-`useGameProtocol.sendCommit()` ([useGameProtocol.ts:359-364](app/src/composables/useGameProtocol.ts#L359-L364)) performs both the crypto **and** the store update **and** the relay send:
+`useGameProtocol.sendCommit()` ([useGameProtocol.ts:359-364](../../games/sea-strike/src/composables/useGameProtocol.ts#L359-L364)) performs both the crypto **and** the store update **and** the relay send:
 
 ```ts
 async function sendCommit(ships: PlacedShip[]): Promise<void> {
@@ -64,7 +64,7 @@ But `SetupPhase.handleReady()` already performs its own crypto and store update 
 
 ### Secondary issue: `mySaltHex` not set
 
-Even if the relay message were sent, the protocol's internal `mySaltHex` variable ([useGameProtocol.ts:80](app/src/composables/useGameProtocol.ts#L80)) is never populated when `SetupPhase` handles the crypto directly. This variable is needed later by `sendReveal()` ([useGameProtocol.ts:380-382](app/src/composables/useGameProtocol.ts#L380-L382)) to send the salt to the opponent during the REVEAL phase. If the commit were sent without going through `sendCommit()`, the reveal phase would send an empty salt string, causing cheat detection to falsely trigger.
+Even if the relay message were sent, the protocol's internal `mySaltHex` variable ([useGameProtocol.ts:80](../../games/sea-strike/src/composables/useGameProtocol.ts#L80)) is never populated when `SetupPhase` handles the crypto directly. This variable is needed later by `sendReveal()` ([useGameProtocol.ts:380-382](../../games/sea-strike/src/composables/useGameProtocol.ts#L380-L382)) to send the salt to the opponent during the REVEAL phase. If the commit were sent without going through `sendCommit()`, the reveal phase would send an empty salt string, causing cheat detection to falsely trigger.
 
 ### Protocol spec violation
 
@@ -75,7 +75,7 @@ SETUP → COMMIT:  Both send "ready"
 COMMIT → BATTLE: Both send "commit" and receive opponent's commit
 ```
 
-The current implementation sends neither a `ready` nor a `commit` message over the relay. The `sendReady()` function exists in the protocol ([useGameProtocol.ts:354-357](app/src/composables/useGameProtocol.ts#L354-L357)) but is never called from any component.
+The current implementation sends neither a `ready` nor a `commit` message over the relay. The `sendReady()` function exists in the protocol ([useGameProtocol.ts:354-357](../../games/sea-strike/src/composables/useGameProtocol.ts#L354-L357)) but is never called from any component.
 
 ## Affected Components
 

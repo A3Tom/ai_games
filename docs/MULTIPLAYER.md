@@ -4,14 +4,14 @@ Multiplayer Lab is a small reference app for the mechanisms future games can reu
 
 ## Boundaries
 
-- `relay/` owns WebSocket connections, room membership, presence, readiness, forwarding, and aggregate diagnostics.
+- `services/game-server/` owns WebSocket connections, room membership, presence, readiness, forwarding, and aggregate diagnostics.
 - `packages/multiplayer/` owns the browser connection lifecycle, ping measurements, room operations, and observable client state.
-- `playground/` renders controls and measurements using that client. Game payloads remain opaque to the relay.
+- `games/playground/` renders controls and measurements using that client. Game payloads remain opaque to the relay.
 - Existing Sea Strike clients retain their legacy message protocol in separate rooms.
 
 Modern rooms are isolated by both `appId` and `roomId`. Player IDs are temporary connection identifiers, not authenticated identities. Share a room ID or invite URL to join; the service does not expose a public room directory.
 
-Compose serves every app from one web port and proxies `/relay` to the internal relay. Browser builds use `VITE_RELAY_URL=/relay`, resolved against the page origin with `ws://` on HTTP and `wss://` on HTTPS. Modern room capacity is configurable (four in Compose); legacy Sea Strike rooms are capped at two.
+Compose runs one Node service that serves every app and handles WebSockets on the same port. Browser builds use `VITE_RELAY_URL=/relay`, resolved against the page origin with `ws://` on HTTP and `wss://` on HTTPS. Modern room capacity is configurable (four in Compose); legacy Sea Strike rooms are capped at two.
 
 ## Protocol
 
@@ -48,7 +48,7 @@ IDs use 1–64 ASCII letters, digits, underscores, or hyphens. Display names are
 | `bytesReceived`, `bytesSent` | Process-lifetime application payload bytes; excludes WebSocket and TLS overhead |
 | `rejectedMessages` | Process-lifetime rejected requests, including validation and traffic-limit errors |
 
-Relay totals are global live diagnostics. They are not per-game engagement analytics. There is no historical store, exporter, or collection of player behavior. The event log and latency history are bounded browser-session data.
+Relay totals are global live diagnostics. The server exports Prometheus-format metrics at `/metrics`; the optional observability stack stores metrics and structured logs. See the [repository architecture](REPOSITORY_ARCHITECTURE.md) for that flow. The client event log and latency history remain bounded browser-session data.
 
 A message acknowledgement means the relay sent the action to the stated number of open peer sockets. Applications that need confirmed processing must implement their own acknowledgement or synchronization inside the payload.
 

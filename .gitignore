@@ -4,7 +4,7 @@
 **/.env
 /deploy/
 /data/
-/relay/data/
-/pinball/public/engine/
-/pinball/public/game-data/
-/pinball/.engine-build/
+/services/game-server/data/
+/games/pinball/public/engine/
+/games/pinball/public/game-data/
+/games/pinball/.engine-build/

@@ -44,15 +44,30 @@ Games connect to the service as follows:
 
 | Games | Integration |
 | --- | --- |
-| Multiplayer Lab (`playground/`), Dots & Boxes (`dots-and-boxes/`) | Use [`packages/multiplayer`](../packages/multiplayer/) for connections, rooms, readiness, reconnects and latency measurements. |
-| Sea Strike (`app/`) | Uses its own [`useRelay`](../app/src/composables/useRelay.ts) client and the relay's legacy two-player protocol. See its [game architecture](02-ARCHITECTURE.md). |
-| Space Cadet Pinball (`pinball/`) | Runs its WASM engine in the browser; uses the HTTP API for persistent leaderboard scores. |
-| Minesweeper (`minesweeper/`), Snow Drift (`snow_drift/`) | Run locally in the browser and use the shared shell for telemetry. |
+| Multiplayer Lab (`games/playground/`), Dots & Boxes (`games/dots-and-boxes/`) | Use [`packages/multiplayer`](../packages/multiplayer/) for connections, rooms, readiness, reconnects and latency measurements. |
+| Sea Strike (`games/sea-strike/`) | Uses its own [`useRelay`](../games/sea-strike/src/composables/useRelay.ts) client and the relay's legacy two-player protocol. See its [game architecture](02-ARCHITECTURE.md). |
+| Space Cadet Pinball (`games/pinball/`) | Runs its WASM engine in the browser; uses the HTTP API for persistent leaderboard scores. |
+| Minesweeper (`games/minesweeper/`), Snow Drift (`games/snow-drift/`) | Run locally in the browser and use the shared shell for telemetry. |
 
-**The relay handles transport; each game owns its rules and synchronization.** Modern rooms are isolated by `appId` and room ID. Rooms, membership and relay counters live in memory and reset on restart. Pinball's top-ten leaderboard persists in `/data/pinball-scores.json`, backed by the Compose volume. The shared server is wired in [`relay/src/server.ts`](../relay/src/server.ts); see the [multiplayer reference](MULTIPLAYER.md) for protocol details.
+**The relay handles transport; each game owns its rules and synchronization.** Modern rooms are isolated by `appId` and room ID. Rooms, membership and relay counters live in memory and reset on restart. Pinball's top-ten leaderboard persists in `/data/pinball-scores.json`, backed by the Compose volume. The shared server is wired in [`services/game-server/src/server.ts`](../services/game-server/src/server.ts); see the [multiplayer reference](MULTIPLAYER.md) for protocol details.
 
-**Observability is shared across all games and the dashboard.** [`shared/game-shell.js`](../shared/game-shell.js) initializes [`shared/telemetry.js`](../shared/telemetry.js) for page loads, load duration, browser errors and custom game logs. Browser telemetry uses separate HTTP requests from multiplayer messages. [`relay/src/observability.ts`](../relay/src/observability.ts) combines browser and server logs into structured JSON identified by `appId`, source, instance and environment, and exposes Prometheus-format metrics. Browser telemetry delivery is best effort.
+**Observability is shared across all games and the dashboard.** [`shared/game-shell.js`](../shared/game-shell.js) initializes [`shared/telemetry.js`](../shared/telemetry.js) for page loads, load duration, browser errors and custom game logs. Browser telemetry uses separate HTTP requests from multiplayer messages. [`services/game-server/src/observability.ts`](../services/game-server/src/observability.ts) combines browser and server logs into structured JSON identified by `appId`, source, instance and environment, and exposes Prometheus-format metrics. Browser telemetry delivery is best effort.
 
 The base Compose file runs only `games`; [`docker-compose.observability.yml`](../docker-compose.observability.yml) adds VictoriaLogs and VictoriaMetrics. The relay pushes logs to VictoriaLogs; VictoriaMetrics pulls metrics using [`observability/prometheus.yml`](../observability/prometheus.yml). Without the overlay, logs still appear on stdout and `/metrics` remains available. See the [observability setup](../README.md#observability) for configuration.
 
-At build time, [`games.json`](../games.json) drives [`scripts/build-collection.mjs`](../scripts/build-collection.mjs), which builds the registered apps (or copies plain browser files) and packages the dashboard and shared assets. The root [`Dockerfile`](../Dockerfile) combines this collection with the relay in one image; [`docker-compose.local.yml`](../docker-compose.local.yml) builds the same deployment from source.
+Sources are grouped by responsibility:
+
+```text
+games/<id>/              Game UI, rules, assets and optional native engine
+services/game-server/    Shared HTTP hosting, relay, scores and observability
+packages/multiplayer/    Framework-independent multiplayer client
+shared/                 Browser shell and telemetry
+scripts/                Collection build and validation
+observability/          Optional log and metrics service configuration
+games.json              Catalogue: game identity, source and public route
+index.html              Collection dashboard
+```
+
+[`games.json`](../games.json) drives [`scripts/build-collection.mjs`](../scripts/build-collection.mjs): built games supply static `dist/` outputs; plain browser games supply their source files. The root [`Dockerfile`](../Dockerfile) builds games in separate cached stages, then packages their outputs with the server in one image. [`docker-compose.local.yml`](../docker-compose.local.yml) builds this deployment from source. Source folders and public routes are independent, so Snow Drift still uses `/snow_drift/`. See [Adding a game](ADDING_A_GAME.md) for the integration contract.
+
+Sea Strike's historical phase and ticket documents use `app/` and `relay/`; these now map to `games/sea-strike/` and `services/game-server/` respectively.

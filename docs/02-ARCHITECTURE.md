@@ -2,7 +2,7 @@
 
 ## 1. System Overview
 
-This document covers Sea Strike's browser application in [`app/`](../app/). See [Repository Architecture](./REPOSITORY_ARCHITECTURE.md) for the collection diagram, shared services, and observability flow.
+This document covers Sea Strike's browser application in [`games/sea-strike/`](../games/sea-strike/). See [Repository Architecture](./REPOSITORY_ARCHITECTURE.md) for the collection diagram, shared services, and observability flow.
 
 Sea Strike is a Vue SPA: each browser owns its game rules, board state, and cryptographic verification. Its `useRelay` composable uses the relay's legacy two-player WebSocket protocol to exchange messages. In the collection deployment, one Node service on port **14650** serves all game files and hosts the shared relay, telemetry collector, metrics exporter, and Pinball API. Sea Strike rooms and membership live in memory; game state stays in the browsers.
 
@@ -36,7 +36,7 @@ Sea Strike is a Vue SPA: each browser owns its game rules, board state, and cryp
 #### Directory Structure
 
 ```
-app/
+games/sea-strike/
 ├── public/
 │   └── favicon.svg
 ├── src/
@@ -98,7 +98,7 @@ app/
 ### 2.2 Relay Server
 
 ```
-relay/
+services/game-server/
 ├── src/
 │   ├── server.ts           # Entry point
 │   ├── room-manager.ts     # Room join/leave/cleanup logic
@@ -324,4 +324,4 @@ The optional observability overlay adds VictoriaLogs for searchable logs and Vic
 
 ## 10. Repository Structure
 
-Sea Strike's frontend lives in [`app/`](../app/); its component layout is shown in section 2. The relay in [`relay/`](../relay/) and browser shell in [`shared/`](../shared/) serve the whole collection. See [Repository Architecture](./REPOSITORY_ARCHITECTURE.md) for the repository-wide boundaries.
+Sea Strike's frontend lives in [`games/sea-strike/`](../games/sea-strike/); its component layout is shown in section 2. The relay in [`services/game-server/`](../services/game-server/) and browser shell in [`shared/`](../shared/) serve the whole collection. See [Repository Architecture](./REPOSITORY_ARCHITECTURE.md) for the repository-wide boundaries.

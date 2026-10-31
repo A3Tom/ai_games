@@ -27,7 +27,7 @@ The mutual-readiness check (`myCommitHash !== null && opponentCommitHash !== nul
 
 **Step 1 — Player A clicks Ready first:**
 
-`sendCommit()` is called ([useGameProtocol.ts:359-364](app/src/composables/useGameProtocol.ts#L359-L364)):
+`sendCommit()` is called ([useGameProtocol.ts:359-364](../../games/sea-strike/src/composables/useGameProtocol.ts#L359-L364)):
 
 ```ts
 async function sendCommit(ships: PlacedShip[]): Promise<void> {
@@ -43,7 +43,7 @@ Player A's state: `phase = 'commit'`, `myCommitHash = hash_A`, `opponentCommitHa
 
 **Step 2 — Player B receives Player A's commit (Player B still in SETUP):**
 
-`handleCommit()` is called ([useGameProtocol.ts:94-99](app/src/composables/useGameProtocol.ts#L94-L99)):
+`handleCommit()` is called ([useGameProtocol.ts:94-99](../../games/sea-strike/src/composables/useGameProtocol.ts#L94-L99)):
 
 ```ts
 function handleCommit(message: CommitMessage): void {
@@ -98,8 +98,8 @@ The asymmetry: `handleCommit()` checks for mutual readiness, but `sendCommit()` 
 
 | File | Line(s) | Issue |
 |------|---------|-------|
-| [useGameProtocol.ts:359-364](app/src/composables/useGameProtocol.ts#L359-L364) | `sendCommit()` | Missing mutual-readiness check after `gameStore.commitBoard()` |
-| [useGameProtocol.ts:94-99](app/src/composables/useGameProtocol.ts#L94-L99) | `handleCommit()` | Has the check, but only covers the "receive after own commit" case |
+| [useGameProtocol.ts:359-364](../../games/sea-strike/src/composables/useGameProtocol.ts#L359-L364) | `sendCommit()` | Missing mutual-readiness check after `gameStore.commitBoard()` |
+| [useGameProtocol.ts:94-99](../../games/sea-strike/src/composables/useGameProtocol.ts#L94-L99) | `handleCommit()` | Has the check, but only covers the "receive after own commit" case |
 
 ## Proposed Fix
 
@@ -121,6 +121,6 @@ async function sendCommit(ships: PlacedShip[]): Promise<void> {
 
 This is safe because:
 
-- `gameStore.startBattle()` has its own guard: `if (phase.value !== GAME_PHASES.COMMIT) return` ([game.ts:111](app/src/stores/game.ts#L111)). If called twice (once in `sendCommit`, once in `handleCommit` due to a near-simultaneous commit), the second call is a no-op.
+- `gameStore.startBattle()` has its own guard: `if (phase.value !== GAME_PHASES.COMMIT) return` ([game.ts:111](../../games/sea-strike/src/stores/game.ts#L111)). If called twice (once in `sendCommit`, once in `handleCommit` due to a near-simultaneous commit), the second call is a no-op.
 - The relay send happens before the check, so the opponent will receive the commit and trigger their own `handleCommit` → `startBattle()` path regardless.
 - No new state or flags are introduced — the fix reuses the exact same check that already exists in `handleCommit`.
