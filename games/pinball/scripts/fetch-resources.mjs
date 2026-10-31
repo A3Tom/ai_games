@@ -116,7 +116,7 @@ export async function downloadArchive({
     }
   }
   throw new Error(
-    `Could not download the original pinball resources: ${lastError?.message ?? 'Download failed.'} Retry the build, or import a local copy with npm run resources:import --prefix games/pinball -- --from /path/to/Pinball. Use PINBALL_SKIP_RESOURCE_DOWNLOAD=1 for a folder-picker-only build.`,
+    `Could not download the original pinball resources: ${lastError?.message ?? 'Download failed.'} Retry the build, or import a local copy with pnpm --filter space-cadet-pinball run resources:import --from /path/to/Pinball. Use PINBALL_SKIP_RESOURCE_DOWNLOAD=1 for a folder-picker-only build.`,
     { cause: lastError },
   )
 }

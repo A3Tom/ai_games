@@ -65,10 +65,9 @@ UTF-8 bytes. Player IDs are public, ephemeral presence identifiers, not accounts
 or authentication. Room snapshots and player readiness are temporary, and the
 client does not restore game state or replay actions after reconnecting.
 
-Run checks from this directory:
+After the [workspace install](../../README.md#local-development-and-checks), run checks from the repository root:
 
 ```sh
-npm ci
-npm run type-check
-npm test
+pnpm --filter @ai-games/multiplayer run type-check
+pnpm --filter @ai-games/multiplayer test
 ```

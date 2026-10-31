@@ -28,22 +28,24 @@ for (const id of skippedBuilds) {
   }
 }
 
-function run(game, command) {
-  console.log(`${game.title}: npm ${command.join(' ')}`)
-  const result = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', command, {
-    cwd: path.join(root, game.source), stdio: 'inherit', env: process.env,
+function run(title, directory, command) {
+  console.log(`${title}: pnpm ${command.join(' ')}`)
+  const result = spawnSync(process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm', command, {
+    cwd: directory, stdio: 'inherit', env: process.env,
     shell: process.platform === 'win32',
   })
   if (result.error) throw result.error
-  if (result.status !== 0) throw new Error(`${game.title}: npm ${command.join(' ')} failed`)
+  if (result.status !== 0) throw new Error(`${title}: pnpm ${command.join(' ')} failed`)
 }
 
+// One workspace install also prepares shared packages, the server, and tests
+// for games whose prebuilt output is being reused.
+if (flags.install) run('Workspace', root, ['install', '--frozen-lockfile'])
+
 for (const game of games.filter((game) => game.build)) {
-  // Dependencies are still installed for tests when a prebuilt game is used.
-  if (flags.install) run(game, ['ci', '--no-audit', '--no-fund'])
   if (flags.build) {
     if (skippedBuilds.has(game.id)) console.log(`${game.title}: using prebuilt dist/`)
-    else run(game, ['run', 'build'])
+    else run(game.title, path.join(root, game.source), ['run', 'build'])
   }
 }
 

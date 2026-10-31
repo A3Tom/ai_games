@@ -11,10 +11,10 @@ for (const game of games.filter((game) => game.build)) {
   const directory = path.join(root, game.source)
   const manifest = JSON.parse(await readFile(path.join(directory, 'package.json'), 'utf8'))
   if (!manifest.scripts?.test) continue
-  console.log(`${game.title}: npm test`)
-  const result = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['test'], {
+  console.log(`${game.title}: pnpm test`)
+  const result = spawnSync(process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm', ['test'], {
     cwd: directory, stdio: 'inherit', env: process.env, shell: process.platform === 'win32',
   })
   if (result.error) throw result.error
-  if (result.status !== 0) throw new Error(`${game.title}: npm test failed`)
+  if (result.status !== 0) throw new Error(`${game.title}: pnpm test failed`)
 }

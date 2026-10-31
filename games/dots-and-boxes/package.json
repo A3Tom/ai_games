@@ -11,7 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@ai-games/multiplayer": "file:../../packages/multiplayer",
+    "@ai-games/multiplayer": "workspace:*",
     "vue": "^3.5.13"
   },
   "devDependencies": {

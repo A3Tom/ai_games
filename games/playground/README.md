@@ -24,21 +24,20 @@ Allow incoming TCP 14650 through the host firewall and use a network that permit
 
 ## Develop with hot reload
 
-Start the relay:
+After [setting up pnpm](../../README.md#local-development-and-checks), install workspace dependencies and start the relay from the repository root:
 
 ```bash
-npm --prefix services/game-server ci
-MAX_CLIENTS_PER_ROOM=4 npm --prefix services/game-server run dev
+pnpm install --frozen-lockfile
+MAX_CLIENTS_PER_ROOM=4 pnpm --filter @ai-games/game-server run dev
 ```
 
 In another terminal:
 
 ```bash
-npm --prefix games/playground ci
-npm --prefix games/playground run dev
+pnpm --filter multiplayer-lab run dev
 ```
 
-Standalone Vite defaults to `ws://localhost:14650`. You can edit the endpoint in the connection panel. If using `docker compose -f docker-compose.local.yml up --build -d` instead of the standalone Node relay, connect to the same container on port 14650: run `VITE_RELAY_URL=ws://localhost:14650/relay npm --prefix games/playground run dev`.
+Standalone Vite defaults to `ws://localhost:14650`. You can edit the endpoint in the connection panel. If using `docker compose -f docker-compose.local.yml up --build -d` instead of the standalone Node relay, connect to the same container on port 14650: run `VITE_RELAY_URL=ws://localhost:14650/relay pnpm --filter multiplayer-lab run dev`.
 
 ## Try the mechanisms
 
@@ -64,13 +63,13 @@ These are live diagnostics. There is no historical analytics storage or durable 
 ## Hosted builds
 
 ```bash
-VITE_RELAY_URL=wss://relay.example.com npm --prefix games/playground run build
+VITE_RELAY_URL=wss://relay.example.com pnpm --filter multiplayer-lab run build
 ```
 
 The build in `games/playground/dist/` uses relative asset paths and can be hosted under a collection subdirectory. An HTTPS page requires a `wss://` relay. Set `VITE_RELAY_URL=/relay` for same-origin hosting, as the combined Docker image does. Relative endpoints automatically use the current host and select `ws://` or `wss://` from the page protocol. If no endpoint is configured at build time, a hosted lab asks the user to enter one.
 
 ```bash
-npm --prefix games/playground run type-check
-npm --prefix games/playground run build
-npm --prefix games/playground run preview
+pnpm --filter multiplayer-lab run type-check
+pnpm --filter multiplayer-lab run build
+pnpm --filter multiplayer-lab run preview
 ```

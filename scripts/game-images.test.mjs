@@ -45,7 +45,8 @@ async function fixture() {
   git(root, ['init', '--quiet'])
   for (const name of ['games/example/Dockerfile', 'games/example/main.js', 'games/other/Dockerfile',
     'games/plain/index.html', 'shared/game-shell.js', 'packages/client/index.js', '.dockerignore',
-    '.github/workflows/game-images.yml', 'scripts/game-images.mjs', 'extra/toolchain.txt']) {
+    'package.json', 'pnpm-workspace.yaml', 'pnpm-lock.yaml', '.github/workflows/game-images.yml',
+    'scripts/game-images.mjs', 'extra/toolchain.txt']) {
     await put(root, name, `Initial ${name}\n`)
   }
   commit(root)
@@ -90,6 +91,22 @@ test('fingerprints game additions, edits and deletions but ignores unrelated com
     commit(root)
     const current = (await discover(root)).include[0].key
     assert.notEqual(current, previous)
+    previous = current
+  }
+})
+
+test('invalidates every game artifact when workspace installation inputs change', async () => {
+  const root = await fixture()
+  let previous = (await discover(root)).include.map((entry) => entry.key)
+  for (const [name, value] of [
+    ['package.json', '{"packageManager":"pnpm@10.0.0"}'],
+    ['pnpm-workspace.yaml', 'packages: [games/*, packages/*, services/*]'],
+    ['pnpm-lock.yaml', 'Updated dependency resolution'],
+  ]) {
+    await put(root, name, value)
+    commit(root)
+    const current = (await discover(root)).include.map((entry) => entry.key)
+    current.forEach((key, index) => assert.notEqual(key, previous[index], `${name}: game ${index}`))
     previous = current
   }
 })

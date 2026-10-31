@@ -42,8 +42,8 @@ To build the collection from local source with the published Pinball artifact, u
 
 ```bash
 docker compose -f docker-compose.local.yml up --build -d
-# With the local stack running, connect a separate Vite development server:
-VITE_RELAY_URL=ws://localhost:14650/relay npm run dev --prefix games/playground
+# After local dependency setup, connect a separate Vite development server:
+VITE_RELAY_URL=ws://localhost:14650/relay pnpm --filter multiplayer-lab run dev
 ```
 
 The local dashboard, games, and relay share port 14650. Browser files in the container are production builds; rerun `docker compose -f docker-compose.local.yml up --build -d` after changing source files. Pinball's image is only a build input; the running collection remains one service.
@@ -124,7 +124,7 @@ scrape_configs:
 
 VictoriaMetrics pulls metrics, so the game server needs no VictoriaMetrics URL. Within the same Compose network, use `games:14650` as in the supplied scrape file. Keep database and metrics access on the host or private network.
 
-Vite development servers proxy `/telemetry` to `http://127.0.0.1:14650`. Set `TELEMETRY_PROXY_TARGET=http://127.0.0.1:14651` when the server uses a different host port. For Snow Drift without Docker, package the collection and run `STATIC_DIR="$PWD/deploy" npm run dev:server` from the repository root. Open <http://localhost:14650/snow_drift/>; rerun `npm run package:collection` after editing its source files.
+Vite development servers proxy `/telemetry` to `http://127.0.0.1:14650`. Set `TELEMETRY_PROXY_TARGET=http://127.0.0.1:14651` when the server uses a different host port. For Snow Drift without Docker, package the collection and run `STATIC_DIR="$PWD/deploy" pnpm run dev:server` from the repository root. Open <http://localhost:14650/snow_drift/>; rerun `pnpm run package:collection` after editing its source files.
 
 For static hosting such as GitHub Pages, add `<meta name="telemetry-endpoint" content="https://relay.example.com/telemetry">` to each page and allow its origin on the relay, or use `content="off"` to disable delivery. Browser code never receives Victoria credentials. Shared telemetry avoids recording invite URLs and game payloads automatically; do not put player details, room codes, or secrets in custom logs. To emit a game event from an inline module in a game's `index.html`:
 
@@ -139,7 +139,7 @@ Use the same `game-id` as the game's catalogue entry. The shell initializes tele
 
 ## Shared multiplayer client
 
-[`packages/multiplayer`](./packages/multiplayer) contains a TypeScript client without a UI-framework dependency. The lab depends on it through a local package reference. Future games can use the same connection lifecycle, room membership, ready state, messaging, and live metrics without copying the lab UI. This example assumes the game is served from the Compose collection:
+[`packages/multiplayer`](./packages/multiplayer) contains a TypeScript client without a UI-framework dependency. The lab and Dots & Boxes depend on it through a `workspace:*` package reference. Future games can use the same connection lifecycle, room membership, ready state, messaging, and live metrics without copying the lab UI. This example assumes the game is served from the Compose collection:
 
 ```ts
 import { createMultiplayerClient } from '@ai-games/multiplayer'
@@ -180,13 +180,13 @@ The games share a page header and footer through [`shared/game-shell.js`](./shar
 
 Create the game under `games/<id>/` and register its source and public route in [`games.json`](./games.json). Built games produce a static `dist/`; plain browser games are copied as-is. Use the shared shell and the same game ID for telemetry. See [Adding a game](./docs/ADDING_A_GAME.md) for the integration contract, native engine layout, and Docker build steps.
 
-From the repository root, install dependencies, build registered games, and package the collection:
+After [setting up pnpm](#local-development-and-checks), install dependencies, build registered games, and package the collection from the repository root:
 
 ```bash
 node scripts/build-collection.mjs --install --build
 ```
 
-This builds every game from source and writes `deploy/`. Thereafter, use `npm run build:collection` to rebuild source or `npm run package:collection` to assemble existing outputs. The catalogue drives the dashboard and direct builds. Docker builds ordinary apps in cached stages and copies Pinball from its independently published image; [Adding a game](./docs/ADDING_A_GAME.md) describes both patterns.
+This builds every game from source and writes `deploy/`. Thereafter, use `pnpm run build:collection` to rebuild source or `pnpm run package:collection` to assemble existing outputs. The catalogue drives the dashboard and direct builds. Docker builds ordinary apps in cached stages and copies Pinball from its independently published image; [Adding a game](./docs/ADDING_A_GAME.md) describes both patterns.
 
 An all-source build requires Emscripten 4.0.23 when Pinball's generated engine is absent or out of date. Its [game Dockerfile](./games/pinball/Dockerfile) provides this toolchain. To reuse an extracted artifact already staged in `games/pinball/dist/`, run `node scripts/build-collection.mjs --install --build --skip-build=pinball`; this still installs Pinball's dependencies for tests. See [`games/pinball/README.md`](./games/pinball/README.md) for artifact extraction, engine and game-data instructions.
 
@@ -245,26 +245,39 @@ For HTTPS hosting of the container, place your TLS reverse proxy in front of por
 
 ## Local development and checks
 
-For hot reload without Docker, run the relay and lab in separate terminals after installing dependencies:
+Use Node.js 24 and the pinned pnpm 10.34.9 release. From the repository root, enable Corepack and install dependencies once for every game, the shared client, and the server:
 
 ```bash
-npm ci --prefix services/game-server
-MAX_CLIENTS_PER_ROOM=4 npm run dev --prefix services/game-server
-
-npm ci --prefix games/playground
-npm run dev --prefix games/playground
+corepack enable
+corepack install
+pnpm install --frozen-lockfile
 ```
 
-The standalone lab defaults to `ws://localhost:14650`. Its connection panel accepts another endpoint. Root commands provide common checks once the corresponding project dependencies are installed:
+[`pnpm-workspace.yaml`](./pnpm-workspace.yaml) includes `games/*`, `packages/*`, and `services/*`. The workspace fits this collection because multiple games already share `@ai-games/multiplayer`: `workspace:*` links that dependency to the local package. Each app keeps its own scripts, framework, and dependency versions. Snow Drift remains a plain browser game without a package manifest.
+
+Commit dependency changes in the single root [`pnpm-lock.yaml`](./pnpm-lock.yaml); use `pnpm install` to update it after editing manifests. Docker installs dependencies for each app separately, but a root lockfile change invalidates those dependency layers. Individual pnpm projects would retain separate lockfiles and those cache boundaries, at the cost of repeated installs and manual local-package coordination.
+
+For hot reload without Docker, run the relay and lab in separate terminals:
 
 ```bash
-npm ci --prefix packages/multiplayer
-npm test                     # Tooling, server, client and registered game tests
-npm run build                # Server and collection builds
-npm run test:games           # Games with a test script
-npm run package:collection   # Assemble existing outputs into deploy/
+# Terminal 1
+MAX_CLIENTS_PER_ROOM=4 pnpm --filter @ai-games/game-server run dev
 ```
 
-For pinball hot reload, activate Emscripten 4.0.23, build the engine, and run `npm run dev --prefix games/pinball` alongside the relay. Its Vite server proxies `/api` and `/telemetry` to port 14650; see [`games/pinball/README.md`](./games/pinball/README.md) for engine builds, game resources, API configuration, and storage details.
+```bash
+# Terminal 2
+pnpm --filter multiplayer-lab run dev
+```
 
-To work on individual games, run `npm ci` and `npm run dev` inside their `games/<id>/` directory. For Snow Drift, use the staged collection as described in [its README](./games/snow-drift/README.md#how-to-run).
+The standalone lab defaults to `ws://localhost:14650`. Its connection panel accepts another endpoint. Root commands provide common checks after the workspace install:
+
+```bash
+pnpm test                     # Tooling, server, client and registered game tests
+pnpm run build                # Server and collection builds
+pnpm run test:games           # Games with a test script
+pnpm run package:collection   # Assemble existing outputs into deploy/
+```
+
+For pinball hot reload, activate Emscripten 4.0.23, build the engine, and run `pnpm --filter space-cadet-pinball run dev` alongside the relay. Its Vite server proxies `/api` and `/telemetry` to port 14650; see [`games/pinball/README.md`](./games/pinball/README.md) for engine builds, game resources, API configuration, and storage details.
+
+After the workspace install, run `pnpm run dev` inside a game’s `games/<id>/` directory, or select its package from the root with `pnpm --filter <package-name> run dev`. For Snow Drift, use the staged collection as described in [its README](./games/snow-drift/README.md#how-to-run).

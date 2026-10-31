@@ -75,17 +75,17 @@ games/minesweeper/
 - **`vite.config.ts`** - Vite bundler configuration for development and production
 - **`tailwind.config.js`** - Tailwind CSS configuration
 - **`postcss.config.js`** - PostCSS configuration for Tailwind processing
-- **`package.json`** - Dependencies and npm scripts
+- **`package.json`** - Dependencies and package scripts
 
 ## Quick Start
 
 ### Development (Recommended - TypeScript)
 
-From the repository root:
+After [setting up pnpm](../../README.md#local-development-and-checks), run from the repository root:
 
 ```bash
-npm ci --prefix games/minesweeper
-npm run dev --prefix games/minesweeper
+pnpm install --frozen-lockfile
+pnpm --filter minesweeper-typescript run dev
 ```
 
 Then open http://localhost:5173 in your browser.
@@ -93,7 +93,7 @@ Then open http://localhost:5173 in your browser.
 ### Production Build
 
 ```bash
-npm run build --prefix games/minesweeper
+pnpm --filter minesweeper-typescript run build
 ```
 
 The built files will be in the `dist/` directory.
@@ -135,12 +135,12 @@ The deployment workflow is configured in `.github/workflows/deploy.yml` at the r
 - **Tailwind CSS** - Utility-first styling
 - **PostCSS** - CSS processing
 
-## NPM Scripts
+## Package Scripts
 
-- `npm run dev` - Start development server with hot reload
-- `npm run build` - Build for production (TypeScript compilation + Vite bundling)
-- `npm run preview` - Preview production build locally
-- `npm run type-check` - Run TypeScript type checking without emitting files
+- `pnpm run dev` - Start development server with hot reload
+- `pnpm run build` - Build for production (TypeScript compilation + Vite bundling)
+- `pnpm run preview` - Preview production build locally
+- `pnpm run type-check` - Run TypeScript type checking without emitting files
 
 ## TypeScript Benefits
 

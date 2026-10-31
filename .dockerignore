@@ -3,6 +3,7 @@
 .aws
 .codex
 **/node_modules
+**/.pnpm-store
 **/dist
 **/.env
 **/.env.*
@@ -17,3 +18,4 @@ npm-debug.log*
 /games/pinball/public/engine
 /games/pinball/.engine-build
 **/npm-debug.log*
+**/pnpm-debug.log*

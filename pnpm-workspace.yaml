@@ -1,0 +1,15 @@
+packages:
+  - games/*
+  - packages/*
+  - services/*
+
+onlyBuiltDependencies:
+  - esbuild
+  - vue-demi
+
+# This release omits its Vue peer, which otherwise resolves through shared
+# hoisting and can load a different game's Vue runtime during tests.
+packageExtensions:
+  '@vue/test-utils@2.4.6':
+    peerDependencies:
+      vue: ^3.0.1

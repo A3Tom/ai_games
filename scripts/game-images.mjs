@@ -98,6 +98,7 @@ export async function discoverBuilds({ root = rootDirectory, repository, variabl
     }
     const { inputs, args } = resolveConfig(config, variables)
     const paths = [...new Set([source, 'shared', 'packages', '.dockerignore',
+      'package.json', 'pnpm-workspace.yaml', 'pnpm-lock.yaml',
       '.github/workflows/game-images.yml', 'scripts/game-images.mjs', ...inputs])].sort()
     const tree = checkedRun(runner, root, 'git', ['ls-tree', '-r', '-z', 'HEAD', '--', ...paths])
     const key = createHash('sha256').update(JSON.stringify({ schema: 1, platform, paths, args }))

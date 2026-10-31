@@ -2,16 +2,17 @@
   "name": "ai-games-collection",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@10.34.9",
   "scripts": {
-    "build": "npm run build:server && npm run build:collection",
-    "build:server": "npm run build --prefix services/game-server",
+    "build": "pnpm run build:server && pnpm run build:collection",
+    "build:server": "pnpm --filter @ai-games/game-server run build",
     "build:collection": "node scripts/build-collection.mjs --build",
     "package:collection": "node scripts/build-collection.mjs",
-    "dev:server": "npm run dev --prefix services/game-server",
-    "test": "npm run test:tooling && npm run test:server && npm run test:multiplayer && npm run test:games",
+    "dev:server": "pnpm --filter @ai-games/game-server run dev",
+    "test": "pnpm run test:tooling && pnpm run test:server && pnpm run test:multiplayer && pnpm run test:games",
     "test:tooling": "node --test scripts/*.test.mjs",
-    "test:server": "npm test --prefix services/game-server",
-    "test:multiplayer": "npm test --prefix packages/multiplayer && npm run type-check --prefix packages/multiplayer",
+    "test:server": "pnpm --filter @ai-games/game-server test",
+    "test:multiplayer": "pnpm --filter @ai-games/multiplayer test && pnpm --filter @ai-games/multiplayer run type-check",
     "test:games": "node scripts/test-games.mjs"
   }
 }

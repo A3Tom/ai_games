@@ -26,14 +26,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Check collection build tooling
-        run: npm run test:tooling
+        run: pnpm run test:tooling
 
       - name: Log in to GHCR
         uses: docker/login-action@v4
@@ -53,21 +61,16 @@ jobs:
         env:
           VITE_PINBALL_API_URL: ${{ vars.VITE_PINBALL_API_URL }}
 
-      - name: Install server and shared client dependencies
-        run: |
-          npm ci --prefix services/game-server
-          npm ci --prefix packages/multiplayer
-
       - name: Check multiplayer protocol and client
         run: |
-          npm test --prefix services/game-server
-          npm run build --prefix services/game-server
-          npm test --prefix packages/multiplayer
-          npm run type-check --prefix packages/multiplayer
+          pnpm --filter @ai-games/game-server test
+          pnpm --filter @ai-games/game-server run build
+          pnpm --filter @ai-games/multiplayer test
+          pnpm --filter @ai-games/multiplayer run type-check
       
-      - name: Install, build, and package all registered games
+      - name: Build and package all registered games
         run: |
-          build_args=(--install --build)
+          build_args=(--build)
           if [ -n "$SKIP_GAME_BUILDS" ]; then
             build_args+=("--skip-build=$SKIP_GAME_BUILDS")
           fi

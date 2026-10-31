@@ -13,9 +13,12 @@ RUN emcmake cmake -S games/pinball/engine -B /tmp/pinball-engine \
     && node games/pinball/scripts/build-engine.mjs --stamp /out
 
 FROM node:24-alpine AS pinball-dependencies
+RUN corepack enable
+WORKDIR /workspace
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY games/pinball/package.json ./games/pinball/package.json
+RUN pnpm --filter space-cadet-pinball install --frozen-lockfile
 WORKDIR /workspace/games/pinball
-COPY games/pinball/package*.json ./
-RUN npm ci --no-audit --no-fund
 
 # Resource downloads are cached separately from the browser interface and engine.
 # Locally imported public/game-data remains part of the build context.
@@ -32,7 +35,7 @@ COPY --from=pinball-resources /workspace/games/pinball/public/ ./public/
 COPY --from=pinball-engine-builder /out/ ./public/engine/
 ARG PINBALL_SKIP_RESOURCE_DOWNLOAD=0
 ARG VITE_PINBALL_API_URL
-RUN npm run build
+RUN pnpm run build
 
 FROM scratch AS artifact
 COPY --from=pinball-builder /workspace/games/pinball/dist/ /dist/

@@ -82,7 +82,7 @@ The game has been refactored into a modular, object-oriented structure:
 
 From the repository root, run the collection with `docker compose -f docker-compose.local.yml up --build -d` and open <http://localhost:14650/snow_drift/>. The source directory is `games/snow-drift/`; its public route remains `/snow_drift/`. Three.js loads from its CDN.
 
-Without Docker, prepare the collection once with `node scripts/build-collection.mjs --install --build`, then run `STATIC_DIR="$PWD/deploy" npm run dev:server`. Install server dependencies first with `npm ci --prefix services/game-server`. Rerun `npm run package:collection` after editing Snow Drift. Serving the staged collection keeps its relative imports and dashboard links correct. Other games' initial builds require their documented toolchains.
+Without Docker, [set up pnpm](../../README.md#local-development-and-checks), prepare the collection once with `node scripts/build-collection.mjs --install --build`, then run `STATIC_DIR="$PWD/deploy" pnpm run dev:server`. The install step covers all workspace dependencies, including the server. Rerun `pnpm run package:collection` after editing Snow Drift. Serving the staged collection keeps its relative imports and dashboard links correct. Other games' initial builds require their documented toolchains.
 
 ## Controls
 

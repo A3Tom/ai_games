@@ -22,21 +22,20 @@ Everyone joins the same room and marks themselves ready. The host chooses the bo
 
 ## Develop
 
-Install the game and relay dependencies:
+After [setting up pnpm](../../README.md#local-development-and-checks), install workspace dependencies from the repository root:
 
 ```bash
-npm ci --prefix games/dots-and-boxes
-npm ci --prefix services/game-server
+pnpm install --frozen-lockfile
 ```
 
 Start the relay from the repository root, then start the game in another terminal:
 
 ```bash
-MAX_CLIENTS_PER_ROOM=4 npm run dev --prefix services/game-server
+MAX_CLIENTS_PER_ROOM=4 pnpm --filter @ai-games/game-server run dev
 ```
 
 ```bash
-npm run dev --prefix games/dots-and-boxes
+pnpm --filter dots-and-boxes run dev
 ```
 
 The Vite server listens on the network and proxies `/relay` and `/telemetry` to the relay at `http://127.0.0.1:14650`. Open the printed Vite URL; use the computer's LAN address when playing from a phone.
@@ -46,8 +45,8 @@ To use a separate relay, set `VITE_RELAY_URL` to an absolute `ws://` or `wss://`
 Checks:
 
 ```bash
-npm test --prefix games/dots-and-boxes
-npm run build --prefix games/dots-and-boxes
+pnpm --filter dots-and-boxes test
+pnpm --filter dots-and-boxes run build
 ```
 
 The collection build reads the entry in [`games.json`](../../games.json), includes this app in the Docker image and GitHub Pages output, and uses relative asset paths.

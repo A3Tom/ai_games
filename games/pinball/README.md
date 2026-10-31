@@ -16,10 +16,10 @@ node games/pinball/scripts/import-resources.mjs --from /path/to/game-resources
 
 This creates `games/pinball/public/game-data/manifest.json` and copies supported files beside it. This generated directory is ignored by Git. Vite copies it into the built site, and Docker includes it when present in the build context. Serve only resources you intend to make available to everyone who can access the game URL.
 
-The default resource source is the Flatpak package's [Pinball.zip archive](https://archive.org/download/pinball_202007/Pinball.zip). Its expected SHA-256 is `1078b6ec75a36b5585061d1ebdd3f27019d97c1ab7c5a4bb9f1159932aae3109`. The fetch script verifies this before extraction and excludes the Windows executable. To prepare this bundle directly:
+The default resource source is the Flatpak package's [Pinball.zip archive](https://archive.org/download/pinball_202007/Pinball.zip). Its expected SHA-256 is `1078b6ec75a36b5585061d1ebdd3f27019d97c1ab7c5a4bb9f1159932aae3109`. The fetch script verifies this before extraction and excludes the Windows executable. After [setting up pnpm](../../README.md#local-development-and-checks), prepare this bundle from the repository root:
 
 ```bash
-npm ci --prefix games/pinball
+pnpm install --frozen-lockfile
 node games/pinball/scripts/fetch-resources.mjs
 ```
 
@@ -62,16 +62,15 @@ The [game Dockerfile](./Dockerfile) supplies Emscripten 4.0.23 and caches engine
 For development without Docker, install and activate [Emscripten SDK 4.0.23](https://emscripten.org/docs/getting_started/downloads.html), then run these commands from the collection root:
 
 ```bash
-npm ci --prefix games/pinball
-npm run build --prefix games/pinball
-npm run dev --prefix games/pinball
+pnpm install --frozen-lockfile
+pnpm --filter space-cadet-pinball run build
+pnpm --filter space-cadet-pinball run dev
 ```
 
 Run the relay in a separate terminal:
 
 ```bash
-npm ci --prefix services/game-server
-npm run dev --prefix services/game-server
+pnpm --filter @ai-games/game-server run dev
 ```
 
 Vite's `/api` and `/telemetry` proxies reach the relay at `http://127.0.0.1:14650`. The engine build emits `games/pinball/public/engine/space-cadet.js` and `space-cadet.wasm`; generated engine artifacts are ignored by Git. CMake builds from `games/pinball/engine/`, keeping the external workspace checkout independent of this application's build. Existing generated engine artifacts can be reused without a local Emscripten installation while their source fingerprint matches.
@@ -81,13 +80,13 @@ Use the page's controls to start a game, operate the flippers and plunger, pause
 Rendering follows the browser's display refresh rate, including 120, 144, 240, and 360 Hz displays. Physics uses fixed 360 Hz updates, independent of rendering, and the table is composed once per displayed frame. This improves motion above 120 FPS without speeding up the game. Actual FPS depends on the display, browser, and available CPU/GPU performance; a 60 Hz screen still displays up to 60 FPS. The original sprite artwork also limits how many distinct flipper animation frames are available.
 
 ```bash
-npm test --prefix games/pinball
-npm run build --prefix games/pinball
+pnpm --filter space-cadet-pinball test
+pnpm --filter space-cadet-pinball run build
 ```
 
 ## Reuse the static artifact
 
-The reusable/manual [game image workflow](../../.github/workflows/game-images.yml) discovers Pinball's Dockerfile alongside any other game Dockerfiles and publishes `ghcr.io/a3tom/ai_games-pinball`. Its fingerprint includes committed Pinball sources, `shared/`, `packages/`, `.dockerignore`, the shared workflow/tooling and the resolved resource-download option from [image-build.json](./image-build.json). It compares the fingerprint with the current `latest` image and reuses matching artifacts, including historical source-fingerprint tags. Both collection publishing and Pages receive the immutable digest.
+The reusable/manual [game image workflow](../../.github/workflows/game-images.yml) discovers Pinball's Dockerfile alongside any other game Dockerfiles and publishes `ghcr.io/a3tom/ai_games-pinball`. Its fingerprint includes committed Pinball sources, `shared/`, `packages/`, the root package manifest and pnpm lockfile/workspace configuration, `.dockerignore`, the shared workflow/tooling and the resolved resource-download option from [image-build.json](./image-build.json). It compares the fingerprint with the current `latest` image and reuses matching artifacts, including historical source-fingerprint tags. Both collection publishing and Pages receive the immutable digest.
 
 Run **Build game artifact images** manually with `force_rebuild` to refresh all game artifacts explicitly, including updated base images or external resources. Rebuild the collection or rerun Pages afterward to include the refreshed artifact. Only the current default-branch HEAD updates artifact `latest` tags.
 
@@ -138,7 +137,7 @@ This updates `games/pinball/dist/runtime-config.js`; pass another built game dir
 For a direct Vite build, the existing build-time setting remains supported:
 
 ```bash
-VITE_PINBALL_API_URL=https://relay.example.com/api/pinball npm run build --prefix games/pinball
+VITE_PINBALL_API_URL=https://relay.example.com/api/pinball pnpm --filter space-cadet-pinball run build
 ```
 
 The Pages workflow takes this value from the repository Actions variable with the same name. It extracts the reusable image's `/dist`, runs the runtime configurator, then packages the collection without rebuilding Pinball. Set the Actions variable `PINBALL_SKIP_RESOURCE_DOWNLOAD=1` to select an artifact without a downloaded resource bundle; visitors can then select their local resource folder.

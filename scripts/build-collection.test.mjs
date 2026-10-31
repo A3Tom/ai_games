@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { cp, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
+import { chmod, cp, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, test } from 'node:test'
@@ -109,7 +109,7 @@ test('leaves the previous output intact if a game build is missing', async () =>
   assert.equal(await readFile(path.join(root, 'deploy/example/index.html'), 'utf8'), 'Previous build')
 })
 
-test('builds source games while packaging an explicitly prebuilt game', async () => {
+async function sourceAndPrebuiltFixture() {
   const root = await collectionFixture()
   await writeFile(path.join(root, 'games/example/package.json'), JSON.stringify({
     scripts: { build: 'node -e "process.exit(42)"' },
@@ -123,11 +123,56 @@ test('builds source games while packaging an explicitly prebuilt game', async ()
   const games = JSON.parse(await readFile(path.join(root, 'games.json'), 'utf8'))
   games.push(entry({ id: 'other', path: 'other', source: 'games/other' }))
   await writeFile(path.join(root, 'games.json'), JSON.stringify(games))
+  return root
+}
+
+test('builds source games while packaging an explicitly prebuilt game', async () => {
+  const root = await sourceAndPrebuiltFixture()
 
   execFileSync(process.execPath, [path.join(root, 'scripts/build-collection.mjs'), '--build', '--skip-build=example'])
 
   assert.equal(await readFile(path.join(root, 'deploy/example/index.html'), 'utf8'), 'Built game')
   assert.equal(await readFile(path.join(root, 'deploy/other/index.html'), 'utf8'), 'Fresh build')
+})
+
+test('installs the workspace once before source builds even when a game is prebuilt', async () => {
+  const root = await sourceAndPrebuiltFixture()
+  const bin = path.join(root, 'test-bin')
+  const log = path.join(root, 'pnpm-calls.jsonl')
+  await mkdir(bin)
+  const shim = path.join(bin, 'pnpm.cjs')
+  await writeFile(shim, `#!/usr/bin/env node
+const { appendFileSync, readFileSync } = require('node:fs')
+const { spawnSync } = require('node:child_process')
+const args = process.argv.slice(2)
+appendFileSync(process.env.PNPM_TEST_LOG, JSON.stringify({ cwd: process.cwd(), args }) + '\\n')
+if (args[0] === 'install') process.exit(0)
+if (args[0] !== 'run' || args[1] !== 'build') process.exit(43)
+const manifest = JSON.parse(readFileSync('package.json', 'utf8'))
+const result = spawnSync(manifest.scripts.build, { shell: true, stdio: 'inherit' })
+if (result.error) throw result.error
+process.exit(result.status ?? 1)
+`)
+  if (process.platform === 'win32') {
+    await writeFile(path.join(bin, 'pnpm.cmd'), `@"${process.execPath}" "${shim}" %*\r\n`)
+  } else {
+    await chmod(shim, 0o755)
+    await symlink(shim, path.join(bin, 'pnpm'))
+  }
+
+  execFileSync(process.execPath, [path.join(root, 'scripts/build-collection.mjs'),
+    '--install', '--build', '--skip-build=example'], {
+    env: { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH ?? ''}`, PNPM_TEST_LOG: log },
+  })
+
+  const calls = (await readFile(log, 'utf8')).trim().split('\n').map((line) => JSON.parse(line))
+  assert.deepEqual(calls, [
+    { cwd: root, args: ['install', '--frozen-lockfile'] },
+    { cwd: path.join(root, 'games/other'), args: ['run', 'build'] },
+  ])
+  assert.equal(await readFile(path.join(root, 'deploy/example/index.html'), 'utf8'), 'Built game')
+  assert.equal(await readFile(path.join(root, 'deploy/other/index.html'), 'utf8'), 'Fresh build')
+  assert.match(await readFile(path.join(root, 'deploy/snow_drift/index.html'), 'utf8'), /\.\.\/shared/)
 })
 
 test('rejects unknown and plain game build exclusions', async () => {
