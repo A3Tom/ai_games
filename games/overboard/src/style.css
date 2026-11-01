@@ -1,0 +1,572 @@
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  color: #e7e5d9;
+  background: #101d22;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input {
+  font: inherit;
+}
+button,
+.file-button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: wait;
+  opacity: 0.45;
+}
+button:focus-visible,
+a:focus-visible,
+summary:focus-visible,
+.file-button:focus-within {
+  outline: 2px solid #eed49d;
+  outline-offset: 5px;
+}
+button {
+  color: inherit;
+}
+a {
+  color: #dec18b;
+  text-underline-offset: 3px;
+}
+.harbour {
+  max-width: 1380px;
+  width: 100%;
+  padding: 40px 28px 20px;
+  margin: auto;
+}
+.masthead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+.eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.17em;
+  font-weight: 700;
+  color: #c6aa77;
+  margin: 0 0 14px;
+}
+h1 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 700;
+  font-style: italic;
+  font-size: clamp(42px, 5.2vw, 68px);
+  line-height: 1;
+  margin: 0;
+  letter-spacing: -0.045em;
+  color: #f5e9ca;
+}
+h1 span {
+  color: #d48c63;
+}
+.intro {
+  font-family: Georgia, serif;
+  font-size: 18px;
+  color: #a6b9b7;
+  margin: 12px 0 0;
+}
+.edition {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: #94aaa9;
+  display: grid;
+  gap: 6px;
+  text-align: right;
+  border-right: 2px solid #bb9c67;
+  padding: 8px 14px;
+}
+.edition span:first-child {
+  color: #dac397;
+}
+.game-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 32px;
+  align-items: start;
+}
+.play-panel {
+  border: 1px solid #3b4d4f;
+  background: #0a1418;
+  border-radius: 10px;
+  overflow: hidden;
+  min-width: 0;
+  box-shadow: 0 16px 56px #0003;
+}
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  min-height: 49px;
+  padding: 6px 16px;
+  background: #1a2a2e;
+  border-bottom: 1px solid #394a49;
+}
+.signal {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #afbfba;
+  font-size: 11px;
+  min-width: 0;
+}
+.signal i {
+  width: 6px;
+  height: 6px;
+  background: #dbbb7d;
+  box-shadow: 0 0 10px #dbbb7d44;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.toolbar button {
+  border: 1px solid #425451;
+  background: transparent;
+  border-radius: 5px;
+  font-size: 11px;
+  padding: 6px 9px;
+  white-space: nowrap;
+}
+.toolbar button:hover {
+  background: #31433f;
+}
+.screen {
+  aspect-ratio: 4/3;
+  position: relative;
+  background: #050909;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+}
+.screen iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #050909;
+}
+.launch-card {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  padding: 24px;
+  background: radial-gradient(ellipse at 50% 45%, #1c363b 0, #0c1c23 70%);
+}
+.launch-card::before {
+  content: "";
+  position: absolute;
+  inset: 18px;
+  border: 1px solid #5c776336;
+  pointer-events: none;
+  z-index: -1;
+}
+.ship {
+  width: clamp(105px, 16vw, 190px);
+  height: auto;
+  margin: 0 0 14px;
+}
+.launch-card .eyebrow {
+  margin-bottom: 12px;
+  font-size: 9px;
+}
+.launch-card h2 {
+  font-family: Georgia, serif;
+  font-size: clamp(22px, 2.2vw, 31px);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: #e9e3cd;
+  margin: 0;
+}
+.media-status {
+  max-width: 410px;
+  color: #91aaa8;
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 14px 0 22px;
+}
+.primary {
+  background: #d8b67c;
+  border: 1px solid #eacb95;
+  border-radius: 5px;
+  color: #202d2b;
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: 0.01em;
+  padding: 13px 26px;
+  min-width: 165px;
+  display: flex;
+  justify-content: space-between;
+  gap: 32px;
+}
+.primary:hover:not(:disabled) {
+  background: #e9cd97;
+}
+.primary span {
+  font-size: 16px;
+}
+.launch-note {
+  font-size: 10px;
+  line-height: 1.7;
+  color: #819a97;
+  margin: 17px 0 0;
+}
+.player-foot {
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  color: #90a7a1;
+  font-size: 10px;
+  border-top: 1px solid #273c3d;
+}
+.player-foot #controller-status {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.format {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  color: #738d89;
+}
+.captains-notes {
+  display: grid;
+  gap: 24px;
+  padding-top: 9px;
+}
+.note + .note {
+  border-top: 1px solid #334746;
+  padding-top: 24px;
+}
+.note .eyebrow {
+  font-size: 9px;
+  margin-bottom: 12px;
+}
+.note h2,
+.setup h2 {
+  font-family: Georgia, serif;
+  font-size: 23px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  margin: 0 0 12px;
+  color: #e5ddc7;
+}
+.note p,
+.setup p {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #a3b6b1;
+  margin: 0 0 12px;
+}
+.note p.small {
+  font-size: 10px;
+  color: #839b95;
+  line-height: 1.8;
+}
+.controls {
+  margin: 23px 0 16px;
+  font-size: 10px;
+  display: grid;
+  gap: 13px;
+}
+.controls > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.controls dt {
+  color: #a7b8b0;
+}
+.controls dd {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #9bb0a8;
+}
+kbd {
+  font-family: inherit;
+  font-size: 9px;
+  min-width: 20px;
+  min-height: 21px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 5px;
+  background: #203337;
+  color: #cbd4bf;
+  border: 1px solid #435753;
+  border-bottom: 2px solid #526258;
+  border-radius: 3px;
+  line-height: 1.2;
+}
+.setup {
+  border-top: 1px solid #314545;
+  border-bottom: 1px solid #314545;
+  margin-top: 34px;
+}
+.setup summary {
+  padding: 20px 0;
+  cursor: pointer;
+  font-size: 12px;
+  color: #c9d3c4;
+  font-weight: 600;
+  list-style-position: inside;
+}
+.setup summary span {
+  font-weight: 400;
+  color: #78928e;
+  font-size: 10px;
+  margin-left: 15px;
+}
+.setup-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 48px;
+  padding: 8px 0 22px;
+  max-width: 1050px;
+}
+.setup h2 {
+  font-size: 20px;
+}
+.setup p {
+  font-size: 11px;
+}
+.file-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #53685c;
+  border-radius: 4px;
+  color: #dec597;
+  padding: 9px 13px;
+  font-size: 11px;
+  overflow: hidden;
+}
+.file-button:hover {
+  background: #283e3e;
+}
+.file-button input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+.file-description {
+  font-size: 10px;
+  color: #8da399;
+  display: block;
+  margin-top: 10px;
+  overflow-wrap: anywhere;
+}
+.setup-message {
+  grid-column: 1/-1;
+  color: #e7bd8e !important;
+  margin: 0 !important;
+}
+.setup-message:empty {
+  display: none;
+}
+.page-foot {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 10px;
+  line-height: 1.6;
+  color: #77918b;
+  margin-top: 20px;
+}
+.page-foot a {
+  color: inherit;
+}
+.play-panel:fullscreen,
+.play-panel.expanded {
+  display: flex;
+  flex-direction: column;
+  background: #050909;
+  border: 0;
+  border-radius: 0;
+  width: 100%;
+  height: 100%;
+}
+.play-panel.expanded {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+.play-panel:fullscreen .screen,
+.play-panel.expanded .screen {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  aspect-ratio: auto;
+}
+.play-panel:fullscreen .toolbar,
+.play-panel.expanded .toolbar,
+.play-panel:fullscreen .player-foot,
+.play-panel.expanded .player-foot {
+  flex-shrink: 0;
+}
+.play-panel:fullscreen .ship,
+.play-panel.expanded .ship {
+  width: 180px;
+}
+[hidden] {
+  display: none !important;
+}
+@media (min-width: 1500px) {
+  .harbour {
+    padding-top: 48px;
+  }
+}
+@media (max-width: 1000px) {
+  .game-layout {
+    grid-template-columns: minmax(0, 1fr) 240px;
+    gap: 24px;
+  }
+  .harbour {
+    padding: 28px 22px 20px;
+  }
+  .format {
+    display: none;
+  }
+  .ship {
+    width: 130px;
+    margin-bottom: 5px;
+  }
+  .launch-card {
+    padding: 18px;
+  }
+  .media-status {
+    margin: 10px 0 16px;
+  }
+  .captains-notes {
+    gap: 18px;
+  }
+  .note h2 {
+    font-size: 21px;
+  }
+}
+@media (max-width: 760px) {
+  .harbour {
+    padding: 26px 16px 18px;
+  }
+  .masthead {
+    margin-bottom: 24px;
+  }
+  .masthead .eyebrow {
+    font-size: 8px;
+    letter-spacing: 0.1em;
+  }
+  .game-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .captains-notes {
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  .note + .note {
+    border: 0;
+    padding: 0;
+  }
+  .setup {
+    margin-top: 24px;
+  }
+  .ship {
+    width: 145px;
+  }
+  .launch-card {
+    padding: 24px;
+  }
+  .edition {
+    font-size: 8px;
+    padding-right: 9px;
+  }
+  .setup-body {
+    gap: 24px;
+  }
+  .setup summary span {
+    display: block;
+    margin: 8px 0 0 15px;
+  }
+}
+@media (max-width: 450px) {
+  .captains-notes,
+  .setup-body {
+    grid-template-columns: 1fr;
+  }
+  .note + .note {
+    border-top: 1px solid #334746;
+    padding-top: 20px;
+  }
+  .ship {
+    width: 90px;
+    margin: 0;
+  }
+  .launch-card .eyebrow {
+    font-size: 8px;
+    margin: 0 0 8px;
+  }
+  .launch-card {
+    padding: 14px;
+  }
+  .launch-card h2 {
+    font-size: 22px;
+  }
+  .media-status {
+    font-size: 10px;
+    margin: 9px 0 12px;
+  }
+  .primary {
+    padding: 10px 20px;
+    font-size: 12px;
+    min-width: 150px;
+  }
+  .launch-note {
+    font-size: 8px;
+    margin-top: 10px;
+  }
+  .edition {
+    display: none;
+  }
+  .intro {
+    font-size: 16px;
+  }
+  .page-foot {
+    font-size: 9px;
+  }
+  .toolbar {
+    padding: 6px 10px;
+  }
+  .signal {
+    font-size: 10px;
+  }
+  .player-foot {
+    padding: 10px;
+  }
+  .controls {
+    max-width: 330px;
+  }
+}

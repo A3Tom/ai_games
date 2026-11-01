@@ -1,0 +1,81 @@
+{
+  "version": "4.2.3",
+  "source": "https://github.com/EmulatorJS/EmulatorJS/tree/v4.2.3",
+  "license": "GPL-3.0-or-later",
+  "core": {
+    "name": "pcsx_rearmed",
+    "buildVersion": "2.0.2",
+    "builtAt": "2025-06-14T18:34:16+00:00",
+    "source": "https://github.com/EmulatorJS/pcsx_rearmed",
+    "buildSource": "https://github.com/EmulatorJS/build",
+    "license": "GPL-2.0"
+  },
+  "files": [
+    {
+      "path": "loader.js",
+      "url": "https://cdn.emulatorjs.org/4.2.3/data/loader.js",
+      "bytes": 7594,
+      "sha256": "69e0903bf1e2f62ced78895e7e511fa26e11316f7eb734925c35e919ba1287b2"
+    },
+    {
+      "path": "emulator.min.js",
+      "url": "https://cdn.emulatorjs.org/4.2.3/data/emulator.min.js",
+      "bytes": 426343,
+      "sha256": "6aec3fd7bb2721255801b0a6af02e47e78b05e28a1822b1f213aacbd348abaee"
+    },
+    {
+      "path": "emulator.min.css",
+      "url": "https://cdn.emulatorjs.org/4.2.3/data/emulator.min.css",
+      "bytes": 25630,
+      "sha256": "16406c60b2dc3b04ae9b115e308613e6f567a0cc7068e21d9d0c1e5030fb395e"
+    },
+    {
+      "path": "compression/extract7z.js",
+      "url": "https://cdn.emulatorjs.org/4.2.3/data/compression/extract7z.js",
+      "bytes": 280155,
+      "sha256": "4ac9933b995a516cb6b3ca4027db860278372a20c21c405d93ceb1998498853a"
+    },
+    {
+      "path": "compression/extractzip.js",
+      "url": "https://cdn.emulatorjs.org/4.2.3/data/compression/extractzip.js",
+      "bytes": 196199,
+      "sha256": "3cc825428724213acd43d30552a78008e0869b2326de17dee240dbff9ee2f629"
+    },
+    {
+      "path": "cores/reports/pcsx_rearmed.json",
+      "url": "https://cdn.emulatorjs.org/4.2.3/data/cores/reports/pcsx_rearmed.json",
+      "bytes": 149,
+      "sha256": "93b99266955ab16e9aa0faa0d6338f4a29b50c197764dd48be945573a5b449c1"
+    },
+    {
+      "path": "cores/pcsx_rearmed-wasm.data",
+      "url": "https://cdn.emulatorjs.org/4.2.3/data/cores/pcsx_rearmed-wasm.data",
+      "bytes": 1039627,
+      "sha256": "fe5515f6c29f093f0e8c01824b213804f1f76eb9cb4c97c72fe2cc17606bfbc2"
+    },
+    {
+      "path": "cores/pcsx_rearmed-legacy-wasm.data",
+      "url": "https://cdn.emulatorjs.org/4.2.3/data/cores/pcsx_rearmed-legacy-wasm.data",
+      "bytes": 1038636,
+      "sha256": "88faee73d06c597a68a8b78e5621d97feefca134c64b623e65f0a900037456da"
+    },
+    {
+      "path": "cores/pcsx_rearmed-thread-wasm.data",
+      "url": "https://cdn.emulatorjs.org/4.2.3/data/cores/pcsx_rearmed-thread-wasm.data",
+      "bytes": 1100889,
+      "sha256": "017cd5727be628983e26fab99c9a7f859cf7d180d7a74798a43f76cd601f2266"
+    },
+    {
+      "path": "cores/pcsx_rearmed-thread-legacy-wasm.data",
+      "url": "https://cdn.emulatorjs.org/4.2.3/data/cores/pcsx_rearmed-thread-legacy-wasm.data",
+      "bytes": 1100329,
+      "sha256": "ce15177e95ab9fa09954c5b32e17f5797844426a4f3b1dd2b296592aa223c57a"
+    },
+    {
+      "path": "LICENSE.txt",
+      "url": "https://raw.githubusercontent.com/EmulatorJS/EmulatorJS/v4.2.3/LICENSE",
+      "bytes": 35111,
+      "sha256": "a617fab6d251b3302b1cb2c1c94f52d1c584f6fcb2fc218ec1a475bc08053a61"
+    }
+  ]
+}
