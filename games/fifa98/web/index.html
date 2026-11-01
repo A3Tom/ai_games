@@ -16,12 +16,13 @@
       <section class="intro">
         <p class="eyebrow">REBUILDING THE ORIGINAL</p>
         <h2>Back to the pitch.</h2>
-        <p>Explore the original stadiums, preview player motions and prepare your squads while the native game engine is being recovered.</p>
-        <p class="notice">Matches are not playable yet. You can explore original stadiums and player motions and edit squads and palettes. Match simulation and online play are still under development.</p>
+        <p>Test original player movement and ball launches, explore stadiums and prepare your squads while the native game engine is being recovered.</p>
+        <p class="notice">Matches are not playable yet. You can control one player, launch a test ball, explore original stadiums and motions, and edit squads and palettes. Player contact, complete football actions, opponents, match rules and online play are still under development.</p>
       </section>
       <div id="status" role="status" aria-live="polite">Loading the native module and disc resources…</div>
       <nav aria-label="Workbench">
         <button class="tab active" data-panel="stadiums" type="button" aria-pressed="true">Original stadiums</button>
+        <button class="tab" data-panel="controls" type="button" aria-pressed="false">Player controls</button>
         <button class="tab" data-panel="players" type="button" aria-pressed="false">Player motions</button>
         <button class="tab" data-panel="textures" type="button" aria-pressed="false">Original textures</button>
         <button class="tab" data-panel="roster" type="button" aria-pressed="false">Teams & squads</button>
@@ -34,6 +35,17 @@
         <p id="scene-detail" class="muted"></p>
         <div class="camera-controls"><label for="camera-yaw">Rotate<input id="camera-yaw" type="range" min="-3.14159" max="3.14159" step="0.01" value="0.5"></label><label for="camera-pitch">Elevation<input id="camera-pitch" type="range" min="-0.2" max="1.4" step="0.01" value="0.55"></label><label for="camera-distance">Distance<input id="camera-distance" type="range" min="1.3" max="5" step="0.01" value="2.8"></label></div>
         <p class="hint">Drag to rotate. Scroll to zoom. The stadium meshes, grass grid and five pitch sizes come from the original game. Grass uses a dry-weather texture for inspection; original lighting, pitch markings and match controls still need recovery.</p>
+      </section>
+      <section id="controls" class="panel" hidden>
+        <div class="section-head"><div><p class="eyebrow">BACK ON THE GRASS</p><h3>Test the original movement</h3></div><span class="muted">One-player control test</span></div>
+        <div class="scene-toolbar"><button id="control-play" type="button" aria-pressed="false">Start control test</button><button id="control-carry" type="button">Carry test ball (C)</button><button id="control-launch" type="button">Launch test ball (B)</button><button id="control-step" type="button">Advance one tick</button><button id="control-reset" class="secondary" type="button">Reset position</button></div>
+        <div class="scene-toolbar"><label for="control-launch-type">Ball launch</label><select id="control-launch-type"><option value="ground">Ground</option><option value="loft">Lofted</option><option value="curve">Curved loft</option><option value="reverse-curve">Reverse curved loft</option></select><label for="control-camera">Camera</label><select id="control-camera"><option value="player">Follow player</option><option value="ball">Follow ball</option><option value="both">Show both</option></select></div>
+        <div class="scene-canvas-wrap"><canvas id="control-preview" width="512" height="384" tabindex="0" aria-label="Player control test. Focus here; arrows or W A S D move, C carries a test ball, B launches it, Space steps while paused."></canvas></div>
+        <p id="control-detail" class="muted" role="status"></p>
+        <div class="control-pad" aria-label="Directional controls"><button data-direction="4" type="button" aria-label="Move up">↑</button><div><button data-direction="2" type="button" aria-label="Move left">←</button><button data-direction="8" type="button" aria-label="Move down">↓</button><button data-direction="1" type="button" aria-label="Move right">→</button></div></div>
+        <p class="hint">Start the test and use arrows, W A S D or the direction buttons. Press C to carry a test ball, then B to release it towards your movement target; when standing still, it launches forwards. Choose a ground or lofted launch above. While paused, Space advances one tick.</p>
+        <p id="control-scope" class="hint"></p>
+        <details><summary>Movement readings</summary><output id="control-readings"></output><canvas id="control-map" width="240" height="300" aria-label="Inspection map showing player and target positions"></canvas><p class="hint">The map and following camera are inspection tools. The movement profile uses source test indices, without assigning unrecovered statistics to a named player.</p></details>
       </section>
       <section id="players" class="panel" hidden>
         <div class="section-head"><div><p class="eyebrow">FROM YOUR DISC</p><h3>Players in motion</h3></div><span class="muted">Original model and keys</span></div>
@@ -75,12 +87,14 @@
       <section id="recovery" class="panel" hidden>
         <p class="eyebrow">ORIGINAL GAME → NATIVE SOURCE → WEBASSEMBLY</p><h3>Recovery progress</h3>
         <div id="recovery-cards" class="recovery-cards"></div>
-        <p>Recovered timing, player-distance, isolated ball physics and horizontal player movement arithmetic run directly as compiled C. Original stadiums, grass and player poses render through native drawing code. Match initialization, complete player controls, other ball contacts and spin, AI and rules still need recovery.</p>
+        <p>Recovered timing, player-distance, grounded target launches, ball drag and spin, player target, turning and horizontal movement arithmetic run directly as compiled C. Original stadiums, grass, ball sprites and player poses render through native drawing code. Match initialization, complete player actions, other ball contacts, AI and rules still need recovery.</p>
         <p>503 original motion clips contain 12,192 keys. Native decoding, joint hierarchy and weighted skinning now render those original player poses. Original motion scheduling, turning and mirrored poses remain unfinished.</p>
         <p>Original multiplayer and kit assignment are not connected to this preview.</p>
         <a href="./code-map.json" download>Download the static code recovery map</a>
         <p><a href="./match-recovery.json" download>Download the original simulation recovery evidence</a></p>
         <p><a href="./player-recovery.json" download>Download the original player movement evidence</a> · <a href="./motion-playback.json" download>Download the motion timing evidence</a></p>
+        <p><a href="./control-target-recovery.json" download>Controller targets</a> · <a href="./steering-recovery.json" download>Turning and speed limits</a> · <a href="./locomotion-animation.json" download>Locomotion actions and phase</a> · <a href="./player-placement.json" download>Player placement</a></p>
+        <p><a href="./ball-interaction-recovery.json" download>Ball launch numerics</a> · <a href="./ball-motion-recovery.json" download>Ball spin and random state</a> · <a href="./action-transition-recovery.json" download>Mirrored and retained poses</a> · <a href="./ball-visual-recovery.json" download>Ball sprite</a></p>
         <details><summary>Recovered integer display helper</summary><p>The original helper scales a packed input and caps the result at 99. Its exact player-statistic meaning is still being investigated.</p><label for="helper-input">Input (0–15)</label><input id="helper-input" type="range" min="0" max="15" value="8"><output id="helper-result" for="helper-input"></output></details>
       </section>
       <footer><div><strong>Keep your work.</strong><p>Save a mod file to carry your changes to another browser.</p></div><div class="actions"><button id="export-mod" type="button">Export mod</button><label class="button secondary" for="import-mod">Import mod<input id="import-mod" type="file" accept="application/json,.json" hidden></label><button id="reset-mod" class="secondary" type="button">Reset local edits</button></div></footer>

@@ -1,11 +1,12 @@
 import { loadNative } from './native.mjs'
 import { createSceneView } from './scene-view.mjs'
 import { createPlayerView } from './player-view.mjs'
+import { createControlView } from './control-view.mjs'
 import { decodePsh } from './modules/textures.mjs'
 import { createMod, validateMod, applyRosterMod } from './modules/mods.mjs'
 
 const $ = (id) => document.getElementById(id)
-let manifest, baseRoster, roster, native, mod, catalog, storageKey, sceneView, playerView
+let manifest, baseRoster, roster, native, mod, catalog, storageKey, sceneView, playerView, controlView
 let selectedAsset, container, selectedBitmap, requestNumber = 0
 const cache = new Map()
 const option = (text, value) => Object.assign(document.createElement('option'), { textContent: text, value: String(value) })
@@ -33,6 +34,7 @@ function saveMod(candidate, message) {
   roster = updated
   sceneView?.refresh()
   playerView?.refresh()
+  controlView?.refresh()
   try {
     localStorage.setItem(storageKey, JSON.stringify(mod))
     setStatus(message)
@@ -258,6 +260,11 @@ try {
       const edit = mod.textures.find((entry) => entry.sourceSha256 === asset.sourceSha256 && entry.textureIndex === texture.index)
       return edit ? Uint16Array.from(edit.palette) : texture.palette
     }, setStatus })
+  controlView = createControlView({ manifest, native, getBytes: (url) => get(url, 'bytes'), hash,
+    paletteFor: (asset, texture) => {
+      const edit = mod.textures.find((entry) => entry.sourceSha256 === asset.sourceSha256 && entry.textureIndex === texture.index)
+      return edit ? Uint16Array.from(edit.palette) : texture.palette
+    }, setStatus })
   document.body.dataset.ready = 'true'
   if (storageMessage) setStatus(storageMessage, true)
 } catch (error) { setStatus(error.message, true); document.body.dataset.ready = 'error' }
@@ -265,9 +272,11 @@ try {
 for (const tab of document.querySelectorAll('.tab')) tab.addEventListener('click', () => {
   document.querySelectorAll('.panel').forEach((panel) => { panel.hidden = panel.id !== tab.dataset.panel })
   document.querySelectorAll('.tab').forEach((entry) => { entry.classList.toggle('active', entry === tab); entry.setAttribute('aria-pressed', String(entry === tab)) })
-  if (tab.dataset.panel === 'stadiums') sceneView?.open().catch((error) => setStatus(error.message, true))
-  if (tab.dataset.panel === 'players') playerView?.open().catch((error) => setStatus(error.message, true))
+  if (tab.dataset.panel === 'stadiums') sceneView?.open().catch((error) => { if (!$('stadiums').hidden) setStatus(error.message, true) })
+  if (tab.dataset.panel === 'players') playerView?.open().catch((error) => { if (!$('players').hidden) setStatus(error.message, true) })
   else playerView?.pause()
+  if (tab.dataset.panel === 'controls') controlView?.open().catch((error) => { if (!$('controls').hidden) setStatus(error.message, true) })
+  else controlView?.pause()
 })
 on('asset-search', 'input', async () => {
   const previous = $('asset').value

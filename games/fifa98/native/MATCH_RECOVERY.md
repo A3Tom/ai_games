@@ -40,6 +40,11 @@ Its payload begins at file offset 2048 and loads at `0x80011800`.
 The ball drag routine is **partly** recovered: only the branch where its spin
 word is zero is implemented. Its 428-byte fingerprint identifies the containing
 routine; it does not claim all branches have native implementations.
+That statement describes the existing `match.c` API. The follow-up
+`ball-motion.c` now implements the complete air-drag/spin arithmetic and its
+source random generator through a separate typed ABI; see
+[BALL_MOTION_RECOVERY.md](BALL_MOTION_RECOVERY.md). Contact processing and the
+full predictor remain incomplete.
 The ground-branch fingerprint likewise covers event bookkeeping and a callback
 that the native physics helper does not implement. Its bounce arithmetic alone
 occupies `0x80079f44`–`0x80079f98` (88 bytes, SHA-256
@@ -227,14 +232,25 @@ State at offsets `0x16bc/0x16c0/0x16c4` is velocity, positions are at
 - `0x80079c90`: complete contact processing called just after position advance;
   only its isolated-floor physics subset is now ported. Continue with its
   record/callback bookkeeping and remaining contact branches.
-- `0x8007a88c`: nonzero-spin branches use original options and random state.
+- `0x8007a88c`: full air drag/spin and original random state are now recovered
+  separately in `ball-motion.c`; see `BALL_MOTION_RECOVERY.md`.
 - `0x80074440`: only original material-table selection is adapted; calls to
-  `0x8007d348` / `0x8007ce00` and setting-index semantics remain unresolved.
+  `0x8007d348` and setting-index semantics remain unresolved. Source flight
+  table builders called by `0x8007ce00` are now reconstructed in `ball-flight.c`.
 - `0x80077eb4`, `0x80077c64`, `0x80078258`, `0x8007843c`, `0x800779a8`:
   original predictor contact helpers; their complete semantics remain unresolved.
 - `0x80076650`: consumes prediction records and routes gameplay events/callbacks.
 - `0x80076300`: initializes prediction state and calls the generator; a complete
   native launch API needs this behavior plus caller/state recovery.
+
+`player-ball.c` reconstructs the animation marker, owned attachment and a
+grounded no-contact subset of `0x8007b790`, with original reciprocal and velocity
+clamps. It supplies source ownership/action preconditions explicitly in the
+browser test; it does not establish loose-ball acquisition. Grounded and lofted
+launch numerics are in `ball-interaction.c` and `ball-flight.c`. Original sprite
+phase/heading now consume final sample displacement, with its source grouped
+tick arithmetic. These additions leave full contact dispatch and match rules
+unfinished; see `PLAYER_BALL_RECOVERY.md` and `BALL_VISUAL_PHASE_RECOVERY.md`.
 
 ## Validation
 

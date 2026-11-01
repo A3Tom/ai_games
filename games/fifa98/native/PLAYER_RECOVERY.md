@@ -223,11 +223,14 @@ control rules:
   and large-turn animation callbacks (`0x800ba0c0`). It uses resident
   `0x80026fd0` to derive heading from target deltas. That resident function
   uses a quarter-angle lookup at `0x80048e30`, including fixed-ratio rounding,
-  rather than a floating-point arctangent. These paths are not yet native.
+  rather than a floating-point arctangent. These heading/target/steering paths are now ported separately in
+  `control-target.c` and `steering.c`, with animation requests guarded explicitly.
+  See `CONTROL_TARGET_RECOVERY.md` and `STEERING_RECOVERY.md`.
 - The beginning of `0x8008d2dc` applies speed limits based on target distance,
   motion flags, normal/alternate maximum, turning category and helper output.
-  A complete controlled slice needs these selections together with steering
-  and the appropriate original animation/contact constraints.
+  These selections are now ported in `steering.c` and connected to the isolated
+  `CONTROL_TEST.md` composition. Full animation/contact constraints and the
+  gameplay dispatcher remain unfinished.
 
 The other central-tick helper `0x800a10c8` adjusts shared target/cursor fields
 and bounds them to pitch dimensions. It has not been relabeled as player

@@ -8,8 +8,9 @@ import { sampleMotionPose, motionPhaseForKey, verifyMotionBaseClip } from './mod
 /** Original key poses through recovered native skinning and platform drawing.
  * Playback is an inspection aid, not the original match scheduler.
  */
-export function createPlayerView({ manifest, native, getBytes, hash, paletteFor, setStatus }) {
+export function createPlayerView({ manifest, native, getBytes, hash, paletteFor, setStatus: reportStatus }) {
   const $ = (id) => document.getElementById(id)
+  const setStatus = (...args) => { if (!$('players').hidden) reportStatus(...args) }
   const canvas = $('player-preview'), context = canvas.getContext('2d'), cache = new Map()
   let model, headModel, textureAsset, textures, baseFrame, clip, selected, normalization, generation = 0, frame = 0
   let playing = false, previousTime = 0, elapsed = 0

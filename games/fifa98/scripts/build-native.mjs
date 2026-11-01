@@ -26,8 +26,22 @@ export const nativeExports = Object.freeze([
   'fifa98_pcmd_skin_matrices', 'fifa98_pcmd_skin', 'fifa98_pcmd_attachment',
   'fifa98_player_heading_vector', 'fifa98_player_digital_direction', 'fifa98_player_motion_profile',
   'fifa98_player_target_speed', 'fifa98_player_motion_integrate',
+  'fifa98_control_heading', 'fifa98_control_decay', 'fifa98_control_pitch_bound',
+  'fifa98_control_target', 'fifa98_control_target_delta', 'fifa98_control_workspace', 'fifa98_control_workspace_words',
+  'fifa98_player_steer', 'fifa98_player_speed_clamp',
+  'fifa98_locomotion_state', 'fifa98_locomotion_motion', 'fifa98_locomotion_categories', 'fifa98_locomotion_actions',
+  'fifa98_locomotion_phase_state', 'fifa98_locomotion_select', 'fifa98_locomotion_phase', 'fifa98_locomotion_run_variant',
+  'fifa98_player_render_position',
+  'fifa98_random_seed', 'fifa98_random_next', 'fifa98_ball_air_motion', 'fifa98_ball_motion_tick',
+  'fifa98_ball_visual_speed', 'fifa98_ball_visual_phase',
+  'fifa98_ball_flight_tables','fifa98_ball_flight_factors','fifa98_ball_flight_angles',
+  'fifa98_ball_loft_launch','fifa98_ball_loft_random_launch',
+  'fifa98_player_ball_marker','fifa98_player_ball_attach','fifa98_player_ball_follow',
+  'fifa98_ball_heading16', 'fifa98_ball_heading_vector16', 'fifa98_ball_ground_launch_speed', 'fifa98_ball_ground_launch',
+  'fifa98_ball_action_target',
+  'fifa98_action_runtime_flags', 'fifa98_action_pose', 'fifa98_action_workspace', 'fifa98_action_workspace_words',
 ])
-export const nativeSources = Object.freeze(['core.c', 'renderer.c', 'model.c', 'match.c', 'pitch.c', 'motion.c', 'player.c'])
+export const nativeSources = Object.freeze(['core.c', 'renderer.c', 'model.c', 'match.c', 'pitch.c', 'motion.c', 'player.c', 'control-target.c', 'steering.c', 'locomotion-animation.c', 'player-placement.c', 'ball-motion.c', 'ball-interaction.c', 'action-transition.c','ball-flight.c','player-ball.c'])
 
 function run(command, args) {
   const result = spawnSync(command, args, { encoding: 'utf8' })

@@ -5,15 +5,20 @@ rebuilt as native game code compiled to WebAssembly, with online opponents and
 editable teams and kits. The browser runtime must run without a console emulator
 or a MIPS instruction interpreter.
 
-**Current status: original stadiums and animated player poses render in native WebAssembly; matches are not yet playable.**
+**Current status: one-player movement, test-owned ball carrying and grounded/airborne launches run in native WebAssembly; matches are not yet playable.**
 Recovered C code now includes simulation timing, rolling player-distance updates,
-no-spin airborne ball movement, isolated ground bounce/rolling, model coordinate/UV conversion, the original
+airborne drag/spin and source random state, grounded and lofted target-launch numerics,
+original generated flight tables, animation-driven ball attachment and sprite phase,
+isolated ground bounce/rolling, model coordinate/UV conversion, the original
 grass grid, original player hierarchy/weighted skinning and motion delta decoding.
 A new native triangle renderer displays 201 meshes across 34 original stadium
 variants and the original high-detail player using their disc textures.
 Recovered movement support now includes original heading/digital-direction
-tables, speed profiles, controller target-speed selection and horizontal
-acceleration/displacement arithmetic. These remain partial player logic.
+tables, speed profiles, controller targets, neutral stopping, steering, speed
+limits and horizontal acceleration/displacement arithmetic. The control test
+combines these with the original locomotion selector, supported looping keys,
+per-key mirroring and retained sparse pose channels.
+These remain partial player logic.
 The preview
 can edit team/player names, shirt numbers, squads and texture palettes, with
 local persistence and versioned mod import/export. These edits are preparation
@@ -63,6 +68,48 @@ pitch-size profiles are available. The grass grid contains 192 vertices and 165
 quads; margin, dry-weather texture and neutral shading are explicit inspection
 choices. Original match lighting, weather selection and pitch markings are not
 recovered by this preview.
+
+The **Player controls** tab lets you move one player on the original grass.
+Select **Start control test**, then use arrow keys, W/A/S/D or hold the direction
+buttons. Release to slow down; reset returns to the centre. While paused, focus
+the pitch and press Space to advance a single source tick. Direction combinations,
+neutral decay, target bounds, turning and acceleration use the recovered C
+functions. Standing, walking, jogging and running use the original source action
+selector and loop phase arithmetic. The child constructor's flag conversion
+and original mirrored key application now allow the supported turning clips to
+advance. Sparse output channels are retained across keys and clips in the
+unlinked, discrete, zero-heading branch. Phase alignment, heading offsets,
+callbacks and linked blending remain unfinished; action changes restart phase
+as explicit inspection policy.
+The test runs sixty source ticks per second for inspection, without claiming
+recovery of the original wall clock. Its motion/attribute configuration is an
+explicit source test fixture, not a named player or complete match initialization.
+Original integer-to-render placement is recovered separately, including the
+two-to-one coordinate conversion.
+
+Press **C** or **Carry test ball** to start a test-owned ball at the player.
+Original interpolated animation markers, attachment guards and bounded ground
+follow arithmetic move it with the player. This supplies ownership explicitly;
+it does not acquire a loose ball through contact. Press **B** or **Launch test
+ball** to release that ball from its current fixed position. Without a test-owned
+ball, launch places a new test ball at the player. Choose **Ground**, **Lofted**,
+**Curved loft** or **Reverse curved loft**. Original generated flight tables,
+vertical launch solver, spin selection, air motion and isolated ground physics
+advance it to rest. Targets use the movement target, or a source-bounded forward
+target when stationary; the original action target producer remains unfinished.
+Sprite heading and four-state animation use consumed displacement and the
+original visual scheduler. The camera can follow either object or show both.
+Ground parameter10, loft duration index60, material0/0 and inspection cadence
+are explicit fixture choices. Contact acquisition, kick-animation timing,
+opponents, scoring, match rules and online simulation remain unfinished.
+See [native/CONTROL_TEST.md](native/CONTROL_TEST.md).
+Source sprite and palette evidence is in
+[native/BALL_VISUAL_RECOVERY.md](native/BALL_VISUAL_RECOVERY.md); mirrored and
+retained sparse-key evidence is in
+[native/ACTION_TRANSITION_RECOVERY.md](native/ACTION_TRANSITION_RECOVERY.md).
+Attachment and launch evidence is in
+[native/PLAYER_BALL_RECOVERY.md](native/PLAYER_BALL_RECOVERY.md) and
+[native/BALL_FLIGHT_RECOVERY.md](native/BALL_FLIGHT_RECOVERY.md).
 
 The **Player motions** tab renders the original high-detail body and separate
 head model with the original texture templates. The bright template colours
@@ -216,6 +263,13 @@ through bounces to rest. These explicit compositions omit original event records
 predictor special states, spin, posts, nets, walls and player collisions.
 Full evidence and next recovery targets are in
 [native/MATCH_RECOVERY.md](native/MATCH_RECOVERY.md).
+The separate [ball motion](native/BALL_MOTION_RECOVERY.md) recovery now completes
+the airborne spin routine and its six-word source random generator. The
+[grounded launch](native/BALL_INTERACTION_RECOVERY.md) recovery adds the original
+target-to-velocity calculation, corrected heading/trig, bounded fixed divide
+and negative exponential table path. These remain numeric routines with explicit
+arguments; original ownership, event/predictor initialization and player contact
+must be recovered before they become a complete football action.
 
 `scripts/animation.mjs` decodes 503 original motion clips containing 12,192 keys.
 It preserves the original absolute channels, signed packed deltas and sparse
@@ -234,10 +288,15 @@ See [native/MOTION_RECOVERY.md](native/MOTION_RECOVERY.md); no guessed pose is u
 regions and eight data tables before reporting typed native interfaces. The
 horizontal integrator preserves piecewise acceleration/deceleration, split-step
 displacement and the original quarter-sine heading table. Controller target-speed
-selection preserves the original analog thresholds and flag update. Full
-direction-to-heading steering, neutral stopping, contacts and action selection
-remain unresolved, so these exports are not connected as complete match controls.
-See [native/PLAYER_RECOVERY.md](native/PLAYER_RECOVERY.md).
+selection preserves the original analog thresholds and flag update. The separate
+control-target and steering modules now provide the missing direction-to-target,
+neutral decay, heading, turning and speed-limit arithmetic for the isolated test.
+Contacts, full action callbacks and the match dispatcher remain unfinished.
+See [native/PLAYER_RECOVERY.md](native/PLAYER_RECOVERY.md),
+[native/CONTROL_TARGET_RECOVERY.md](native/CONTROL_TARGET_RECOVERY.md),
+[native/STEERING_RECOVERY.md](native/STEERING_RECOVERY.md),
+[native/LOCOMOTION_ANIMATION_RECOVERY.md](native/LOCOMOTION_ANIMATION_RECOVERY.md)
+and [native/PLAYER_PLACEMENT_RECOVERY.md](native/PLAYER_PLACEMENT_RECOVERY.md).
 
 ```bash
 node games/fifa98/scripts/match-recovery.mjs

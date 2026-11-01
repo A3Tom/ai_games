@@ -4,8 +4,9 @@ import { decodePsh } from './modules/textures.mjs'
 import { createPitchGeometry } from './modules/pitch.mjs'
 
 /** Inspection camera over recovered original geometry. No match state is created. */
-export function createSceneView({ manifest, native, getBytes, hash, paletteFor, setStatus }) {
+export function createSceneView({ manifest, native, getBytes, hash, paletteFor, setStatus: reportStatus }) {
   const $ = (id) => document.getElementById(id)
+  const setStatus = (...args) => { if (!$('stadiums').hidden) reportStatus(...args) }
   const canvas = $('stadium-preview'), context = canvas.getContext('2d')
   const scenes = new Map()
   let selected = null, scene = null, sourceTextures = null, grass = null, generation = 0, frame = 0
