@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>FIFA 98 · Native reconstruction</title>
+    <link rel="stylesheet" href="./style.css">
+    <script type="module" src="./app.mjs"></script>
+  </head>
+  <body>
+    <header>
+      <div class="brand"><span class="ball" aria-hidden="true">◉</span><div><p class="eyebrow">ROAD TO WORLD CUP</p><h1>FIFA <span>98</span></h1></div></div>
+      <span class="badge">NATIVE WASM · IN DEVELOPMENT</span>
+    </header>
+    <main>
+      <section class="intro">
+        <p class="eyebrow">REBUILDING THE ORIGINAL</p>
+        <h2>Back to the pitch.</h2>
+        <p>Explore the original stadiums, preview player motions and prepare your squads while the native game engine is being recovered.</p>
+        <p class="notice">Matches are not playable yet. You can explore original stadiums and player motions and edit squads and palettes. Match simulation and online play are still under development.</p>
+      </section>
+      <div id="status" role="status" aria-live="polite">Loading the native module and disc resources…</div>
+      <nav aria-label="Workbench">
+        <button class="tab active" data-panel="stadiums" type="button" aria-pressed="true">Original stadiums</button>
+        <button class="tab" data-panel="players" type="button" aria-pressed="false">Player motions</button>
+        <button class="tab" data-panel="textures" type="button" aria-pressed="false">Original textures</button>
+        <button class="tab" data-panel="roster" type="button" aria-pressed="false">Teams & squads</button>
+        <button class="tab" data-panel="recovery" type="button" aria-pressed="false">Recovery progress</button>
+      </nav>
+      <section id="stadiums" class="panel">
+        <div class="section-head"><div><p class="eyebrow">FROM YOUR DISC</p><h3>Inside the stadium</h3></div><span class="muted">Original geometry · inspection camera</span></div>
+        <div class="scene-toolbar"><label for="stadium">Stadium</label><select id="stadium"></select><label for="pitch-size">Pitch size</label><select id="pitch-size"><option value="0">Largest</option><option value="1">Large</option><option value="2" selected>Medium</option><option value="3">Small</option><option value="4">Compact</option></select><button id="camera-reset" type="button">Reset camera</button></div>
+        <div class="scene-canvas-wrap"><canvas id="stadium-preview" width="512" height="384" aria-label="Original stadium geometry. Drag to rotate the inspection camera."></canvas></div>
+        <p id="scene-detail" class="muted"></p>
+        <div class="camera-controls"><label for="camera-yaw">Rotate<input id="camera-yaw" type="range" min="-3.14159" max="3.14159" step="0.01" value="0.5"></label><label for="camera-pitch">Elevation<input id="camera-pitch" type="range" min="-0.2" max="1.4" step="0.01" value="0.55"></label><label for="camera-distance">Distance<input id="camera-distance" type="range" min="1.3" max="5" step="0.01" value="2.8"></label></div>
+        <p class="hint">Drag to rotate. Scroll to zoom. The stadium meshes, grass grid and five pitch sizes come from the original game. Grass uses a dry-weather texture for inspection; original lighting, pitch markings and match controls still need recovery.</p>
+      </section>
+      <section id="players" class="panel" hidden>
+        <div class="section-head"><div><p class="eyebrow">FROM YOUR DISC</p><h3>Players in motion</h3></div><span class="muted">Original model and keys</span></div>
+        <div class="scene-toolbar"><label for="motion-search">Find a motion</label><input id="motion-search" type="search" placeholder="Search original clip names…"><label for="motion-clip">Motion clip</label><select id="motion-clip"></select></div>
+        <div class="scene-canvas-wrap"><canvas id="player-preview" width="512" height="384" aria-label="Original player model in the selected motion pose"></canvas></div>
+        <p id="player-detail" class="muted"></p>
+        <div class="actions"><button id="motion-previous" type="button">Previous key</button><button id="motion-play" type="button" aria-pressed="false">Preview motion</button><button id="motion-next" type="button">Next key</button><output id="motion-key-label" for="motion-key"></output></div>
+        <div class="camera-controls"><label for="motion-key">Motion key<input id="motion-key" type="range" min="0" max="0" step="1" value="0"></label><label for="player-yaw">Rotate player<input id="player-yaw" type="range" min="-3.14159" max="3.14159" step="0.01" value="0.2"></label></div>
+        <p class="hint">Original body and head meshes use the disc's texture templates. Bright template colours remain visible until the original face and kit composition is recovered. Motion preview advances original keys at a viewing speed; match timing, motion selection and player controls are still being recovered.</p>
+      </section>
+      <section id="textures" class="panel" hidden>
+        <div class="section-head"><div><p class="eyebrow">FROM YOUR DISC</p><h3>Texture workshop</h3></div><span id="texture-count" class="muted"></span></div>
+        <div class="texture-layout">
+          <aside>
+            <label for="asset-search">Find an asset</label><input id="asset-search" type="search" placeholder="Player, stadium, menu…">
+            <label for="asset">Texture container</label><select id="asset" size="12" aria-label="Texture container"></select>
+          </aside>
+          <div class="preview-card">
+            <div class="preview-toolbar"><label for="bitmap">Bitmap</label><select id="bitmap"></select><label for="zoom">Scale</label><select id="zoom"><option value="1">1×</option><option value="2">2×</option><option value="4" selected>4×</option><option value="8">8×</option></select></div>
+            <div class="canvas-wrap"><canvas id="preview" width="256" height="256" aria-label="Original texture preview"></canvas></div>
+            <p id="texture-detail" class="muted"></p>
+            <div class="palette-controls"><label for="palette-index">Palette colour</label><select id="palette-index"></select><input id="palette-colour" type="color" aria-label="Palette colour"><button id="palette-reset" type="button">Restore original palette</button></div>
+            <p class="hint">Palette edits preview in WebAssembly and export with your mod. Assigning textures to individual team kits still needs recovery.</p>
+          </div>
+        </div>
+      </section>
+      <section id="roster" class="panel" hidden>
+        <div class="section-head"><div><p class="eyebrow">YOUR CLUB, YOUR SQUAD</p><h3>Teams & squads</h3></div><span id="roster-count" class="muted"></span></div>
+        <div class="roster-layout">
+          <aside><label for="team-search">Find a team</label><input id="team-search" type="search" placeholder="Search team names…"><label for="team">Team</label><select id="team" size="14" aria-label="Team"></select></aside>
+          <div class="roster-card">
+            <label for="team-name">Team name</label><input id="team-name" maxlength="80"><button id="save-team" type="button">Save team name</button>
+            <h4>Squad</h4><div id="squad" class="squad"></div>
+            <div class="player-edit"><h4>Edit a player</h4><label for="player-search">Find any player</label><input id="player-search" type="search" placeholder="Search all players…"><label for="player">Player</label><select id="player"></select><label for="player-name">Player name</label><input id="player-name" maxlength="80"><label for="shirt-number">Shirt number</label><input id="shirt-number" type="number" min="0" max="255"><div class="actions"><button id="save-player" type="button">Save player</button><label for="squad-slot">Squad slot</label><select id="squad-slot"></select><button id="assign-player" type="button">Assign to slot</button><button id="clear-slot" type="button">Clear slot</button></div></div>
+            <p class="hint">Changes stay in this browser and in exported mod files. They do not change the disc. The recovered match engine will need to consume these edits before they affect gameplay.</p>
+          </div>
+        </div>
+      </section>
+      <section id="recovery" class="panel" hidden>
+        <p class="eyebrow">ORIGINAL GAME → NATIVE SOURCE → WEBASSEMBLY</p><h3>Recovery progress</h3>
+        <div id="recovery-cards" class="recovery-cards"></div>
+        <p>Recovered timing, player-distance, isolated ball physics and horizontal player movement arithmetic run directly as compiled C. Original stadiums, grass and player poses render through native drawing code. Match initialization, complete player controls, other ball contacts and spin, AI and rules still need recovery.</p>
+        <p>503 original motion clips contain 12,192 keys. Native decoding, joint hierarchy and weighted skinning now render those original player poses. Original motion scheduling, turning and mirrored poses remain unfinished.</p>
+        <p>Original multiplayer and kit assignment are not connected to this preview.</p>
+        <a href="./code-map.json" download>Download the static code recovery map</a>
+        <p><a href="./match-recovery.json" download>Download the original simulation recovery evidence</a></p>
+        <p><a href="./player-recovery.json" download>Download the original player movement evidence</a> · <a href="./motion-playback.json" download>Download the motion timing evidence</a></p>
+        <details><summary>Recovered integer display helper</summary><p>The original helper scales a packed input and caps the result at 99. Its exact player-statistic meaning is still being investigated.</p><label for="helper-input">Input (0–15)</label><input id="helper-input" type="range" min="0" max="15" value="8"><output id="helper-result" for="helper-input"></output></details>
+      </section>
+      <footer><div><strong>Keep your work.</strong><p>Save a mod file to carry your changes to another browser.</p></div><div class="actions"><button id="export-mod" type="button">Export mod</button><label class="button secondary" for="import-mod">Import mod<input id="import-mod" type="file" accept="application/json,.json" hidden></label><button id="reset-mod" class="secondary" type="button">Reset local edits</button></div></footer>
+    </main>
+  </body>
+</html>

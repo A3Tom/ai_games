@@ -1,0 +1,526 @@
+:root {
+  font-family:Inter,ui-sans-serif,system-ui,sans-serif;
+  color:#e9eff7;
+  background:#0b1421;
+  font-synthesis:none;
+  color-scheme:dark;
+  --muted:#a7b5c8;
+  --line:#2b3b51;
+  --green:#c9ff59
+}
+
+* {
+  box-sizing:border-box
+}
+
+body {
+  margin:0
+}
+
+header {
+  max-width:1440px;
+  margin:auto;
+  padding:32px 5%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border-bottom:1px solid var(--line)
+}
+
+.brand {
+  display:flex;
+  align-items:center;
+  gap:18px
+}
+
+.ball {
+  font-size:48px;
+  color:var(--green)
+}
+
+h1 {
+  font-size:48px;
+  letter-spacing:-3px;
+  line-height:.9;
+  margin:5px 0;
+  font-style:italic
+}
+
+h1 span {
+  color:var(--green)
+}
+
+.eyebrow {
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:2.5px;
+  color:var(--green);
+  margin:0 0 12px
+}
+
+.brand .eyebrow {
+  font-size:8px;
+  letter-spacing:2px
+}
+
+.badge {
+  border:1px solid #587133;
+  background:#203022;
+  color:var(--green);
+  padding:9px 12px;
+  font-size:10px;
+  letter-spacing:1.4px;
+  font-weight:800;
+  border-radius:3px
+}
+
+main {
+  max-width:1440px;
+  margin:auto;
+  padding:38px 5%
+}
+
+h2 {
+  font-size:clamp(32px,4vw,54px);
+  letter-spacing:-1.8px;
+  margin:0 0 12px;
+  line-height:1.1
+}
+
+h3 {
+  font-size:25px;
+  letter-spacing:-.7px;
+  margin:0 0 20px
+}
+
+h4 {
+  font-size:16px;
+  margin:28px 0 12px
+}
+
+p {
+  line-height:1.65;
+  color:var(--muted)
+}
+
+.intro {
+  max-width:900px
+}
+
+.intro>p:not(.eyebrow) {
+  margin:10px 0 20px
+}
+
+.notice {
+  border-left:3px solid #f1bd67;
+  padding:9px 16px;
+  background:#c18a2810;
+  font-size:13px
+}
+
+#status {
+  padding:12px 0;
+  font-size:13px;
+  color:var(--green);
+  min-height:44px
+}
+
+#status.error {
+  color:#ffaaa1
+}
+
+nav {
+  display:flex;
+  flex-wrap:wrap;
+  gap:24px;
+  margin:18px 0 32px;
+  border-bottom:1px solid var(--line)
+}
+
+.tab {
+  background:none;
+  color:var(--muted);
+  border:0;
+  border-bottom:3px solid transparent;
+  border-radius:0;
+  padding:15px 0;
+  font-size:14px
+}
+
+.tab.active {
+  border-color:var(--green);
+  color:#fff
+}
+
+.panel[hidden] {
+  display:none
+}
+
+.section-head {
+  display:flex;
+  justify-content:space-between;
+  align-items:center
+}
+
+.section-head h3 {
+  margin-bottom:22px
+}
+
+.muted {
+  color:var(--muted);
+  font-size:12px
+}
+
+.texture-layout,.roster-layout {
+  display:grid;
+  grid-template-columns:280px minmax(0,1fr);
+  gap:26px
+}
+
+aside,.preview-card,.roster-card {
+  border:1px solid var(--line);
+  background:#111e2e;
+  border-radius:8px;
+  padding:20px
+}
+
+aside {
+  align-self:start
+}
+
+label {
+  display:block;
+  font-size:12px;
+  font-weight:600;
+  color:var(--muted);
+  margin:0 0 8px
+}
+
+input,select,button,.button {
+  font:inherit;
+  border:1px solid var(--line);
+  border-radius:4px;
+  padding:10px 12px;
+  background:#0c1726;
+  color:#e9eff7;
+  max-width:100%
+}
+
+input,select {
+  width:100%;
+  margin-bottom:18px;
+  font-size:13px
+}
+
+input[type=color] {
+  width:52px;
+  height:39px;
+  padding:3px;
+  margin:0
+}
+
+input[type=range] {
+  padding:0
+}
+
+button,.button {
+  background:var(--green);
+  color:#14200b;
+  font-size:12px;
+  font-weight:750;
+  cursor:pointer;
+  display:inline-block;
+  text-decoration:none
+}
+
+button:hover,.button:hover {
+  filter:brightness(1.1)
+}
+
+button:disabled {
+  opacity:.45;
+  cursor:default
+}
+
+.tab:hover {
+  background:none
+}
+
+.secondary {
+  background:transparent;
+  color:var(--muted)
+}
+
+select[size] {
+  min-height:340px;
+  margin:0;
+  padding:5px
+}
+
+option {
+  padding:7px 5px;
+  font-size:12px
+}
+
+select[size] option:checked {
+  background:#263d39;
+  color:var(--green)
+}
+
+.preview-toolbar {
+  display:flex;
+  align-items:center;
+  gap:12px
+}
+
+.preview-toolbar select {
+  width:auto;
+  flex:1;
+  margin:0 0 14px
+}
+
+.preview-toolbar label {
+  margin-bottom:14px
+}
+
+.preview-toolbar #zoom {
+  flex:0 0 70px
+}
+
+.canvas-wrap {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:300px;
+  max-height:560px;
+  overflow:auto;
+  border:1px solid #2b3b51;
+  background-color:#182537;
+  background-image:linear-gradient(45deg,#223044 25%,transparent 25%),linear-gradient(-45deg,#223044 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#223044 75%),linear-gradient(-45deg,transparent 75%,#223044 75%);
+  background-size:20px 20px;
+  background-position:0 0,0 10px,10px -10px,-10px 0
+}
+
+canvas {
+  image-rendering:pixelated;
+  object-fit:contain;
+  max-width:100%;
+  flex-shrink:0
+}
+
+.palette-controls,.actions {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap
+}
+
+.palette-controls select {
+  width:90px;
+  margin:0
+}
+
+.palette-controls label,.actions label {
+  margin:0
+}
+
+.hint {
+  font-size:12px;
+  max-width:740px
+}
+
+.roster-card #team-name {
+  width:calc(100% - 150px);
+  margin-right:12px
+}
+
+.squad-row {
+  display:grid;
+  grid-template-columns:28px minmax(0,1fr) 40px;
+  gap:14px;
+  align-items:center;
+  border-bottom:1px solid var(--line);
+  padding:9px 0;
+  font-size:13px
+}
+
+.squad-row button {
+  text-align:left;
+  background:none;
+  color:#e9eff7;
+  border:0;
+  padding:0;
+  font-weight:500
+}
+
+.squad-row .slot {
+  font-family:monospace;
+  color:#7891ad
+}
+
+.squad-row .number {
+  font-size:12px;
+  color:var(--green);
+  text-align:right
+}
+
+.actions select {
+  width:85px;
+  margin:0
+}
+
+.player-edit {
+  padding-top:4px
+}
+
+.recovery-cards {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:18px;
+  margin:20px 0 28px
+}
+
+.recovery-card {
+  border:1px solid var(--line);
+  padding:24px;
+  border-radius:6px;
+  background:#111e2e
+}
+
+.recovery-card strong {
+  font-size:32px;
+  color:var(--green);
+  display:block;
+  letter-spacing:-1px
+}
+
+.recovery-card span {
+  font-size:12px;
+  color:var(--muted)
+}
+
+a {
+  color:var(--green)
+}
+
+details {
+  margin:30px 0;
+  padding:18px;
+  border:1px solid var(--line);
+  border-radius:5px
+}
+
+summary {
+  cursor:pointer;
+  font-size:13px
+}
+
+output {
+  display:block;
+  color:var(--green);
+  font-family:monospace
+}
+
+footer {
+  margin:42px 0 10px;
+  padding-top:26px;
+  border-top:1px solid var(--line);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:20px
+}
+
+footer strong {
+  font-size:14px
+}
+
+footer p {
+  font-size:12px;
+  margin:5px 0
+}
+
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.button:focus-within {
+  outline:2px solid var(--green);
+  outline-offset:4px
+}
+
+@media(max-width:850px) {
+  header {
+    padding:24px 5%
+  }
+  .badge {
+    max-width:145px;
+    line-height:1.8;
+    font-size:8px
+  }
+  main {
+    padding-top:26px
+  }
+  .texture-layout,.roster-layout {
+    grid-template-columns:1fr
+  }
+  select[size] {
+    min-height:150px;
+    max-height:180px
+  }
+  .recovery-cards {
+    grid-template-columns:1fr 1fr
+  }
+  footer {
+    align-items:flex-start;
+    flex-direction:column
+  }
+  .palette-controls button {
+    margin-top:8px
+  }
+  .canvas-wrap {
+    min-height:240px
+  }
+  nav {
+    gap:18px
+  }
+  .tab {
+    font-size:12px
+  }
+  .preview-toolbar {
+    flex-wrap:wrap
+  }
+  .roster-card #team-name {
+    width:100%;
+    margin-right:0
+  }
+}
+
+.scene-toolbar {
+  display:flex;
+  align-items:center;
+  gap:14px;
+  flex-wrap:wrap;
+  margin:20px 0
+}
+.scene-toolbar select { width:auto; flex:1; min-width:140px }
+.scene-canvas-wrap {
+  background:#0c1420;
+  border:1px solid var(--line);
+  border-radius:12px;
+  overflow:hidden;
+  text-align:center
+}
+#stadium-preview,#player-preview {
+  display:block;
+  width:100%;
+  max-width:900px;
+  height:auto;
+  margin:auto;
+  image-rendering:pixelated;
+  cursor:grab;
+  touch-action:none
+}
+#stadium-preview:active { cursor:grabbing }
+.camera-controls { display:flex; gap:22px; flex-wrap:wrap; margin:18px 0 }
+.camera-controls label { flex:1; min-width:100px }
+.camera-controls input { width:100% }
+#motion-search { width:200px; flex:1 }
+#motion-clip { min-width:0; flex:2 }
+#motion-key-label { font-size:12px }
