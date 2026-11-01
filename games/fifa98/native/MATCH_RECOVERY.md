@@ -237,8 +237,10 @@ State at offsets `0x16bc/0x16c0/0x16c4` is velocity, positions are at
 - `0x80074440`: only original material-table selection is adapted; calls to
   `0x8007d348` and setting-index semantics remain unresolved. Source flight
   table builders called by `0x8007ce00` are now reconstructed in `ball-flight.c`.
-- `0x80077eb4`, `0x80077c64`, `0x80078258`, `0x8007843c`, `0x800779a8`:
-  original predictor contact helpers; their complete semantics remain unresolved.
+- `0x80077eb4`, `0x80077c64`, `0x80078258`, `0x8007843c`: constrained original
+  net-plane predicates are now reconstructed in `ball-boundary.c`, alongside
+  the net-bound builder and radius-adjusted pitch-outside flag. Post/back-net
+  helpers including `0x800779a8` and collision responses remain unfinished.
 - `0x80076650`: consumes prediction records and routes gameplay events/callbacks.
 - `0x80076300`: initializes prediction state and calls the generator; a complete
   native launch API needs this behavior plus caller/state recovery.
@@ -251,6 +253,17 @@ launch numerics are in `ball-interaction.c` and `ball-flight.c`. Original sprite
 phase/heading now consume final sample displacement, with its source grouped
 tick arithmetic. These additions leave full contact dispatch and match rules
 unfinished; see `PLAYER_BALL_RECOVERY.md` and `BALL_VISUAL_PHASE_RECOVERY.md`.
+`possession.c` now supplies the guarded original unowned-to-actor transition
+and bounded matching-owner release, including their original team/history
+effects, without inventing contact eligibility. `action-transition.c` also
+supplies window-flag initialization, callback-free nonloop phase advancement
+and BA460's discrete prefix/phase calibration. `ball-flight.c` adds7C71C's
+duration search,7C83C's requested-speed branch and7CA14's option0 height branch,
+preserving their original inverse-table arithmetic and cap/error flags.
+Original football callbacks still reach the general
+launch routine `0x80075924`, which cannot be replaced by the existing isolated
+ground/loft launch fixtures. See `POSSESSION_RECOVERY.md`,
+`BALL_BOUNDARY_RECOVERY.md` and `ACTION_EVENTS_RECOVERY.md`.
 
 ## Validation
 

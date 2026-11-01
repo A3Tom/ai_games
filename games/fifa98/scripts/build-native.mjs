@@ -36,12 +36,18 @@ export const nativeExports = Object.freeze([
   'fifa98_ball_visual_speed', 'fifa98_ball_visual_phase',
   'fifa98_ball_flight_tables','fifa98_ball_flight_factors','fifa98_ball_flight_angles',
   'fifa98_ball_loft_launch','fifa98_ball_loft_random_launch',
+  'fifa98_ball_flight_duration','fifa98_ball_speed_launch',
+  'fifa98_ball_height_launch','fifa98_ball_flight_workspace','fifa98_ball_flight_workspace_words',
   'fifa98_player_ball_marker','fifa98_player_ball_attach','fifa98_player_ball_follow',
+  'fifa98_possession_claim_unowned','fifa98_possession_release','fifa98_possession_release_solo',
+  'fifa98_ball_boundary_geometry','fifa98_ball_outside_pitch','fifa98_ball_goal_plane',
   'fifa98_ball_heading16', 'fifa98_ball_heading_vector16', 'fifa98_ball_ground_launch_speed', 'fifa98_ball_ground_launch',
   'fifa98_ball_action_target',
+  'fifa98_action_window','fifa98_action_nonloop_step',
+  'fifa98_action_calibration_keys','fifa98_action_calibration_vectors',
   'fifa98_action_runtime_flags', 'fifa98_action_pose', 'fifa98_action_workspace', 'fifa98_action_workspace_words',
 ])
-export const nativeSources = Object.freeze(['core.c', 'renderer.c', 'model.c', 'match.c', 'pitch.c', 'motion.c', 'player.c', 'control-target.c', 'steering.c', 'locomotion-animation.c', 'player-placement.c', 'ball-motion.c', 'ball-interaction.c', 'action-transition.c','ball-flight.c','player-ball.c'])
+export const nativeSources = Object.freeze(['core.c', 'renderer.c', 'model.c', 'match.c', 'pitch.c', 'motion.c', 'player.c', 'control-target.c', 'steering.c', 'locomotion-animation.c', 'player-placement.c', 'ball-motion.c', 'ball-interaction.c', 'action-transition.c','ball-flight.c','player-ball.c','possession.c','ball-boundary.c'])
 
 function run(command, args) {
   const result = spawnSync(command, args, { encoding: 'utf8' })

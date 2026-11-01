@@ -20,8 +20,16 @@ export function createControlView({ manifest, native, getBytes, hash, paletteFor
   const pad = [...document.querySelectorAll('[data-direction]')]
   let session, config, body, head, model, headModel, baseFrame, animation, ball, ballTexture, playerTextures, grass, pitch, loading
   let running = false, frame = 0, previousTime = 0, elapsed = 0
-  const controls = ['control-play', 'control-step', 'control-reset','control-carry','control-launch','control-launch-type','control-camera']
-  function enable(enabled) { for (const id of controls) $(id).disabled = !enabled; pad.forEach((button) => { button.disabled = !enabled }) }
+  const controls = ['control-play', 'control-step', 'control-reset','control-carry','control-launch','control-launch-type','control-launch-value','control-camera']
+  function enable(enabled) {
+    for (const id of controls) $(id).disabled = !enabled || (id==='control-launch-value' && !['speed','height'].includes($('control-launch-type').value))
+    pad.forEach((button) => { button.disabled = !enabled })
+  }
+  function configureLaunchInput(){
+    const height=$('control-launch-type').value==='height',value=$('control-launch-value')
+    $('control-launch-value-label').textContent=height?'Loft height':'Loft speed'
+    value.min=height?'4':'0';value.max=height?'1024':'50';value.value=(height?config.ball.flight.height:config.ball.flight.speed)/65536
+  }
   function clearInput() { input.clear(); pad.forEach((button) => button.setAttribute('aria-pressed', 'false')) }
   function pause() {
     running = false; previousTime = 0; elapsed = 0; clearInput()
@@ -83,8 +91,11 @@ export function createControlView({ manifest, native, getBytes, hash, paletteFor
       phase: pose.phase, held: pose.held,mirrored:pose.mirrored,ballExists:testBall.exists,ballActive:testBall.active,ballOwned:testBall.owned,
       ballTicks:testBall.ticks,ballX:testBall.position?.[0]??'',ballZ:testBall.position?.[2]??'',ballSpeed:testBall.velocity?.[2]??'',ballStop:testBall.stopReason??'',
       ballY:testBall.position?.[1]??'',ballSpin:testBall.spin,ballPhase:testBall.visualPhase,ballLaunch:testBall.sourceLaunch?.kind??'',
-      ballVisible:sprite?.visible??false,ballTexture:sprite?.textureIndex??'' })
-    const ballDetail = !testBall.exists ? '' : testBall.stopReason === 'boundary' ? ' · Ball paused before unrecovered boundary contact' : testBall.owned ? ' · Carrying test-owned ball' : testBall.active ? ` · Ball ${testBall.position[1]>0?'airborne':'rolling'}` : ' · Ball at rest'
+      ballBoundaryFlag:testBall.boundaryFlag,ballVisible:sprite?.visible??false,ballTexture:sprite?.textureIndex??'',
+      ballDuration:testBall.sourceLaunch?.duration??'',ballLaunchFlags:testBall.sourceLaunch?.flags??'',
+      ballLaunchHeight:testBall.sourceLaunch?.height??'',
+      ballOwner:testBall.possession?.state[0]??'',ballPreviousOwner:testBall.possession?.state[1]??'' })
+    const ballDetail = !testBall.exists ? '' : testBall.stopReason === 'outside-pitch' ? ' · Ball outside the pitch; restart handling unfinished' : testBall.stopReason === 'boundary' ? ' · Ball paused before unrecovered boundary contact' : testBall.owned ? ' · Carrying test-owned ball' : testBall.active ? ` · Ball ${testBall.position[1]>0?'airborne':'rolling'}` : ' · Ball at rest'
     $('control-detail').textContent = `${state.ticks.toLocaleString()} ticks · ${state.speed === 0 ? 'Stopped' : 'Moving'} · ${pose.clipName}${pose.held ? ' · first key held while transition logic is recovered' : ''}${ballDetail}`
     $('control-readings').textContent = `X ${state.position[0].toFixed(3)}   Z ${state.position[1].toFixed(3)}\nSpeed ${state.speed}   Heading ${state.heading}   Facing ${state.facing}\nTarget ${state.target[0]}, ${state.target[2]}   Distance ${state.distance}\nTurn class ${state.turnClass}   Status ${state.statusFlags}`
     map(state)
@@ -99,7 +110,9 @@ export function createControlView({ manifest, native, getBytes, hash, paletteFor
     ball.step(ticks,{player:result.state,marker:animation.pose().marker})
     return true
   }
-  function launchBall(){if(!ball || $('control-launch').disabled)return;try{ball.launchFrom(session.snapshot(),{kind:$('control-launch-type').value});draw();canvas.focus({preventScroll:true})}catch(error){fail(error)}}
+  function launchBall(){if(!ball || $('control-launch').disabled)return;try{ball.launchFrom(session.snapshot(),{
+    kind:$('control-launch-type').value,speed:Number($('control-launch-value').value)*65536,
+    height:Number($('control-launch-value').value)*65536});draw();canvas.focus({preventScroll:true})}catch(error){fail(error)}}
   function carryBall(){if(!ball || $('control-carry').disabled)return;try{ball.carryFrom(session.snapshot());draw();canvas.focus({preventScroll:true})}catch(error){fail(error)}}
   function tick(now) {
     frame = 0
@@ -145,7 +158,8 @@ export function createControlView({ manifest, native, getBytes, hash, paletteFor
     animation = createControlAnimation(native.core, config.animation, clips,{baseFrame})
     ball = createControlBall(native.core,config.ball,config)
     animation.step(session.snapshot(), 0)
-    $('control-scope').textContent = `Carry starts a test-owned ball at the player. Original animation markers and attachment code move it; launch releases it from its current position. Without an owned ball, launch places a fresh test ball at the player. Ground, loft and spin use recovered source routines. Possession acquisition, player contact and kick timing remain unfinished. The test uses an inspection speed and source texture templates.`
+    configureLaunchInput()
+    $('control-scope').textContent = `Carry starts a test-owned ball at the player. Original animation markers and attachment code move it; launch uses the recovered ownership release and current ball position. Without an owned ball, launch places a fresh test ball at the player. Speed-selected and height-selected loft use the original solvers for your chosen value. Possession acquisition, player contact and kick timing remain unfinished. The test uses an inspection speed and source texture templates.`
     draw(); enable(true); if (!$('controls').hidden) setStatus('Player control test ready. Start it and use the directional controls.')
   }
   $('control-play').addEventListener('click', () => {
@@ -158,6 +172,12 @@ export function createControlView({ manifest, native, getBytes, hash, paletteFor
   $('control-reset').addEventListener('click', () => { if (session) { pause(); session.reset(); animation.reset();ball.reset(); try { animation.step(session.snapshot(), 0); draw(); enable(true) } catch (error) { fail(error) } } })
   $('control-launch').addEventListener('click',launchBall)
   $('control-carry').addEventListener('click',carryBall)
+  $('control-launch-type').addEventListener('change',()=>{
+    if(session && !$('control-launch-type').disabled){
+      configureLaunchInput()
+      enable(true)
+    }
+  })
   $('control-camera').addEventListener('change',()=>{if(session && !$('control-camera').disabled){try{draw()}catch(error){fail(error)}}})
   canvas.addEventListener('keydown', (event) => {
     if($('control-play').disabled)return

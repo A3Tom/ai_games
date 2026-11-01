@@ -500,6 +500,10 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,.b
   margin:20px 0
 }
 .scene-toolbar select { width:auto; flex:1; min-width:140px }
+.scene-toolbar input[type=number] { width:90px; margin-bottom:0 }
+.control-field { display:flex; align-items:center; gap:10px; flex:1 1 240px }
+.control-field label { margin:0; white-space:nowrap }
+.control-field select { margin-bottom:0 }
 .scene-canvas-wrap {
   background:#0c1420;
   border:1px solid var(--line);

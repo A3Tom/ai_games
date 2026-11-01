@@ -98,6 +98,12 @@ rounded reciprocal and component clamps move the ball toward its source anchor;
 the adapter does not teleport it to an invented player-relative offset. This
 fixture supplies three equal opaque ownership tokens and entity attachment
 flag1000h; it does not implement contact acquisition or action-window callbacks.
+The owner token now comes from the original guarded unowned-to-actor transition,
+including its mandatory team fields and five-row ownership history. The fixture
+supplies actor1, a callback-free precheck state and separately attachment actor1;
+it does not infer eligibility from distance. Replacing or releasing the fixture
+discards its diagnostic ownership state, without claiming the remaining original
+ownership-release callbacks. See `POSSESSION_RECOVERY.md`.
 The locomotion selector updates source owner byte36. Under the fixture's
 `flags&2100h==100h`, category byte0 selects current facing; a nonzero category
 selects movement heading. Both add the original signed action heading offset
@@ -112,6 +118,16 @@ replaces a recovered kick animation event. When the movement target equals the
 integer player position, the source analog target constructor receives current
 facing and nonzero magnitude to supply a bounded forward target. Otherwise the
 actual controller target is used.
+
+The release additionally runs the bounded original ownership transition74E58.
+It retains the release's previous-owner, team and notification fields and leaves
+the five-row claim history unchanged. These diagnostic fields are committed
+with the successful numerical launch; a failure preserves both the owned ball
+and its random state. The preview's single controlled own-side actor supplies
+roster count1, matching identity and nonnull controller. Original teammate
+selection has no eligible candidate in that bounded domain, so the release
+callback returns before controller transfer. This does not establish the
+multi-actor release branch. Full75924 launch bookkeeping is still separate.
 
 The ground fixture selects positive source parameter10, material row0/column0,
 options0, seed0 and zero spin. Parameter10 is an inspection input, not a named
@@ -129,10 +145,43 @@ Duration60 is not a recovered action default or a seconds conversion. The origin
 stored action target constructor is also recovered separately; live controller
 targets remain explicit inspection inputs for these launch tests.
 
-The free ball advances one source tick at a time. Owned-ball groups use the
-original constant-velocity no-contact predictor subset. Both stop before an
-unhandled pitch-boundary contact, with position and velocity retained; they never
-invent a wall bounce, goal or restart. The source sprite uses original placement
+**Speed-selected loft** instead uses7C71C/7C83C: the source searches its generated
+factor table for a flight-time index using the requested horizontal speed and
+integer planar distance. This search preserves its extra final iteration and
+strict tie ordering. The resulting speed is not forced to equal the request.
+Original result bit2 reports a discrepancy strictly above32768; bit1 reports
+the supplied vertical cap. The test uses spin0 and a25Q16 vertical cap; its
+editable0..50 speed is an explicit numerical fixture, not an original action
+binding or named player attribute. Default speed9 at distance192 selects index22,
+while speeds5/18/35/50 select41/12/7/5. These are source indices, not seconds.
+
+**Height-selected loft** uses7CA14's original option0 inverse-table branch,
+including its two512-word source lookup tables and positive exponential
+calculation. The requested absolute height defaults to16Q16, with horizontal
+and vertical caps35Q16/25Q16 and spin0. At distance192, requested heights16/64/128
+select source indices28/59/84. Low height4 selects index4 and reaches the source
+horizontal cap; the solver's approximation and caps do not guarantee an exact
+discrete apex. The native API rejects unsupported inverse roots or table indices
+before any output changes. These choices remain numeric fixtures; no original
+action producer has supplied their parameters to the preview.
+
+Preparation separately evaluates BA460's0/-100 phase and A/B-reference recipe
+for every resolved115 action whose start window is valid. Native phase/key
+selection, integer norm and heading produce queue54 calibration values from
+original decoded prefixes. They do not supply the separate queue20 solver
+parameter consumed by the general football launch dispatcher. See
+`ACTION_EVENTS_RECOVERY.md`.
+
+The free ball advances one source tick at a time. Its original endpoint test
+sets trajectory flag10h only beyond half-pitch extent plus radius5, with strict
+inequality. The adapter retains that crossing sample and velocity, then stops
+with `outside-pitch`; no scoring or restart is supplied. This replaces the old
+inspection guard that stopped the centre before the pitch edge. Owned-ball
+groups use the original constant-velocity no-contact predictor subset and retain
+their last supported state before an outside candidate. Four original net-plane
+predicates and their derived geometry are separately recovered and tested;
+net/post responses are not integrated. See `BALL_BOUNDARY_RECOVERY.md`.
+The source sprite uses original placement
 and billboard geometry with the new inspection camera. Sprite roll phase uses
 the original main-path scheduler: source displacement norm of the last consumed
 sample, multiplied by the number of consumed ticks, with the original piecewise

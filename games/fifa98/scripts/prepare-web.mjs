@@ -29,8 +29,12 @@ import { createControlSession } from './control-session.mjs'
 import { createControlAnimation } from './control-animation.mjs'
 import { inspectBallVisual,decodeBallVisual } from './ball-visual.mjs'
 import { inspectBallFlightRecovery } from './ball-flight-recovery.mjs'
+import { calibrateAction } from './action-calibration.mjs'
 import { inspectBallVisualPhase } from './ball-visual-phase.mjs'
 import { inspectPlayerBallRecovery } from './player-ball-recovery.mjs'
+import { inspectPossessionRecovery } from './possession-recovery.mjs'
+import { inspectBallBoundaryRecovery } from './ball-boundary-recovery.mjs'
+import { inspectActionEventsRecovery } from './action-events-recovery.mjs'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 const scriptRoot = fileURLToPath(new URL('./', import.meta.url))
@@ -120,7 +124,7 @@ export async function verifyNativeBuild({ wasm, manifest, source, sources = new 
     throw new Error('Native build is stale or its source/WASM hashes do not match. Rebuild the native core.')
   }
   if (manifest.sources !== undefined) {
-    if (!Array.isArray(manifest.sources) || !manifest.sources.length || manifest.sources.length > 16) throw new Error('Invalid native source manifest')
+    if (!Array.isArray(manifest.sources) || !manifest.sources.length || manifest.sources.length > 18) throw new Error('Invalid native source manifest')
     const names = new Set()
     for (const entry of manifest.sources) {
       if (!entry || !/^[a-z][a-z0-9_-]*\.c$/.test(entry.path) || names.has(entry.path) || !shaPattern.test(entry.sha256) ||
@@ -155,6 +159,8 @@ export async function prepareWeb({ reference = path.join(root, '.work/reference'
     analyzeAction = inspectActionTransitionRecovery,
     analyzeBallFlight = inspectBallFlightRecovery, analyzeBallPhase = inspectBallVisualPhase,
     analyzePlayerBall=inspectPlayerBallRecovery,
+    analyzePossession=inspectPossessionRecovery,analyzeBoundary=inspectBallBoundaryRecovery,
+    analyzeEvents=inspectActionEventsRecovery,
   } = {}) {
   const referenceDirectory = await plainDirectory(path.resolve(reference))
   const membersDirectory = await plainDirectory(path.join(referenceDirectory, 'members'))
@@ -180,7 +186,7 @@ export async function prepareWeb({ reference = path.join(root, '.work/reference'
   const build = JSON.parse(buildBytes.toString('utf8'))
   const sources = new Map()
   if (build.sources !== undefined) {
-    if (!Array.isArray(build.sources) || build.sources.length > 16) throw new Error('Invalid native source manifest')
+    if (!Array.isArray(build.sources) || build.sources.length > 18) throw new Error('Invalid native source manifest')
     for (const entry of build.sources) {
       if (!entry || !/^[a-z][a-z0-9_-]*\.c$/.test(entry.path)) throw new Error('Unsafe native source path')
       sources.set(entry.path, await regularBytes(path.join(path.dirname(nativeSource), entry.path)))
@@ -207,8 +213,10 @@ export async function prepareWeb({ reference = path.join(root, '.work/reference'
   const ballMotionRecovery = analyzeBallMotion(images[2]), ballInteractionRecovery = analyzeBallInteraction(images[2],images[0])
   const ballFlightRecovery=await analyzeBallFlight(images[2],images[0]),ballPhaseRecovery=await analyzeBallPhase(images[2],images[0])
   const playerBallRecovery=await analyzePlayerBall(images[2],images[0])
+  const possessionRecovery=await analyzePossession(images[2]),boundaryRecovery=await analyzeBoundary(images[2],images[0])
+  const eventsRecovery=await analyzeEvents(images[2])
   let actionRecovery = analyzeAction(images[2])
-  for (const recovery of [controlRecovery, steeringRecovery, placementRecovery,ballMotionRecovery,ballInteractionRecovery,actionRecovery,ballFlightRecovery,ballPhaseRecovery,playerBallRecovery]) {
+  for (const recovery of [controlRecovery, steeringRecovery, placementRecovery,ballMotionRecovery,ballInteractionRecovery,actionRecovery,ballFlightRecovery,ballPhaseRecovery,playerBallRecovery,possessionRecovery,boundaryRecovery,eventsRecovery]) {
     if (recovery.status !== 'reconstruction-only') throw new Error('The executable images do not match reviewed control/steering recovery')
     for (const name of recovery.nativeExports) if (typeof native.core[name] !== 'function') throw new Error(`Missing native control export: ${name}`)
   }
@@ -221,13 +229,15 @@ export async function prepareWeb({ reference = path.join(root, '.work/reference'
     entityState: steeringRecovery.inspectionRecipe.ownerStateFlags24,
     time: { kind: 'inspection-cadence', ticksPerSecond: 60 },
     sources: { control: controlRecovery.profile, steering: steeringRecovery.profile },
-    ball: { parameter:10, flight:{duration:60},gravity:0xfe000000, options:0, seed:0,
+    ball: { parameter:10, flight:{duration:60,speed:9*65536,height:16*65536,horizontalCap:35*65536,verticalCap:25*65536},releaseAttribute:10,
+      radius:boundaryRecovery.normalProfile2.radius,gravity:0xfe000000, options:0, seed:0,
       material:matchRecovery.materialTables.map((table) => table.values[0]),
-      atan16:ballInteractionRecovery.tables.atan16.values, exponential:ballInteractionRecovery.tables.exponential.values },
+      atan16:ballInteractionRecovery.tables.atan16.values, exponential:ballInteractionRecovery.tables.exponential.values,
+      inverseA:ballFlightRecovery.tables.inverseA.values.map((word)=>word>>>0),inverseB:ballFlightRecovery.tables.inverseB.values.map((word)=>word>>>0) },
   } : null
   const webFiles = ['index.html', 'style.css', 'app.mjs', 'native.mjs', 'scene-view.mjs', 'player-view.mjs', 'control-view.mjs']
   const webBytes = await Promise.all(webFiles.map((file) => regularBytes(path.join(webRoot, file), 2 * 1024 * 1024)))
-  const modules = ['textures.mjs', 'mods.mjs', 'models.mjs', 'scene.mjs', 'pitch.mjs', 'animation.mjs', 'player-scene.mjs', 'motion-playback.mjs', 'control-session.mjs', 'control-input.mjs', 'control-scene.mjs', 'control-animation.mjs','control-ball.mjs','action-transition.mjs','ball-visual.mjs']
+  const modules = ['textures.mjs', 'mods.mjs', 'models.mjs', 'scene.mjs', 'pitch.mjs', 'animation.mjs', 'player-scene.mjs', 'motion-playback.mjs', 'control-session.mjs', 'control-input.mjs', 'control-scene.mjs', 'control-animation.mjs','control-ball.mjs','action-transition.mjs','action-calibration.mjs','ball-visual.mjs']
   const moduleBytes = await Promise.all(modules.map((file) => regularBytes(path.join(moduleRoot, file), 2 * 1024 * 1024)))
   await mkdir(path.dirname(destination), { recursive: true })
   const staging = await mkdtemp(path.join(path.dirname(destination), '.fifa98-web-'))
@@ -366,6 +376,17 @@ export async function prepareWeb({ reference = path.join(root, '.work/reference'
       actionRecovery = analyzeAction(images[2],bytes)
       if (actionRecovery.status !== 'reconstruction-only') throw new Error('Original action runtime source mismatch')
       const tables = await prepareLocomotionTables(images[2], bytes, decoded115)
+      // This is BA460's exact0/-100,A/B numeric calibration for resolved,
+      // available115 action clips. It does not assert queue eligibility or
+      // execute animation callbacks. Preserve source invalid-phase results.
+      const calibrations=tables.database.records.flatMap((record)=>{
+        const clip=decoded115.get(record.clipName)
+        if(!clip)return[]
+        const value=calibrateAction(native.core,clip,record,controlConfig)
+        return value ? [{actionId:record.actionId,clipName:record.clipName,...value}] : []
+      })
+      eventsRecovery.calibrationValidation={recipe:{startSelector:0,endSelector:-100,startReference:0,endReference:1},
+        cases:calibrations.length,actions:calibrations}
       const variant = native.core.fifa98_locomotion_run_variant(0, 0)
       if (variant !== 0) throw new Error('Native run-variant selection differs from the source initializer fixture')
       const runVariant = tables.runVariants[variant]
@@ -405,13 +426,28 @@ export async function prepareWeb({ reference = path.join(root, '.work/reference'
       actionRecovery.validation = { nativeKeyPoseCases:actionKeyCases }
       controlConfig.animation = { categoryBytes: tables.categoryBytes, actionHalfwords: tables.actionHalfwords, runVariant, actions, mirrorMap }
       const ballTest = createControlBall(native.core,controlConfig.ball,controlConfig)
+      if(boundaryRecovery.normalProfile2.halfWidth!==controlConfig.bounds[0] ||
+          boundaryRecovery.normalProfile2.halfLength!==controlConfig.bounds[1])throw new Error('Original player and ball pitch dimensions disagree')
+      const pitchCrossings=[]
+      for(const axis of [0,2])for(const side of [-1,1]){
+        const limit=controlConfig.bounds[axis===0?0:1],fixedPosition=[0,0],target=[0,0,0]
+        fixedPosition[axis===0?0:1]=side*(limit-2)*65536;target[axis]=side*(limit+190)
+        ballTest.reset();ballTest.launchFrom({fixedPosition,target,facing:0})
+        for(let i=0;i<20&&ballTest.snapshot().active;i++)ballTest.step(1)
+        const crossing=ballTest.snapshot()
+        if(crossing.stopReason!=='outside-pitch'||crossing.boundaryFlag!==16||
+            Math.abs(crossing.fixedPosition[axis])<=(limit+controlConfig.ball.radius)*65536)throw new Error('Original radius-adjusted pitch crossing fixture failed')
+        pitchCrossings.push({axis,side,state:crossing})
+      }
+      boundaryRecovery.validation={pitchCrossings}
+      ballTest.reset()
       ballTest.launchFrom({fixedPosition:[0,0],target:[0,0,0],facing:0})
       for(let i=0;i<3000 && ballTest.snapshot().active;i++)ballTest.step(1)
       const trajectory = ballTest.snapshot()
       if (trajectory.stopReason !== 'rest' || trajectory.position[2] <= 0) throw new Error('Original ball launch inspection fixture did not roll to rest')
       ballInteractionRecovery.validation = { groundedLaunchFixture:trajectory }
       const airborneFixtures={}
-      for(const kind of ['loft','curve','reverse-curve']){
+      for(const kind of ['loft','curve','reverse-curve','speed','height']){
         ballTest.reset();const initial=ballTest.launchFrom({fixedPosition:[0,0],target:[0,0,192],facing:0},{kind})
         if(initial.velocity[1]<=0)throw new Error('Original airborne launch fixture did not rise')
         let peak=0
@@ -421,6 +457,22 @@ export async function prepareWeb({ reference = path.join(root, '.work/reference'
         airborneFixtures[kind]={initial,peak,final}
       }
       ballFlightRecovery.validation={airborneFixtures}
+      const speedFixtures=[]
+      for(const speed of [5,9,18,35,50]){
+        ballTest.reset()
+        const initial=ballTest.launchFrom({fixedPosition:[0,0],target:[0,0,192],facing:0},{kind:'speed',speed:speed*65536})
+        if(initial.sourceLaunch.duration<1||initial.sourceLaunch.duration>319||initial.sourceLaunch.requestedSpeed!==speed*65536)throw new Error('Original speed-selected launch failed')
+        speedFixtures.push(initial)
+      }
+      ballFlightRecovery.validation.speedFixtures=speedFixtures
+      const heightFixtures=[]
+      for(const height of [4,16,64,128]){
+        ballTest.reset()
+        const initial=ballTest.launchFrom({fixedPosition:[0,0],target:[0,0,192],facing:0},{kind:'height',height:height*65536})
+        if(initial.sourceLaunch.duration<0||initial.sourceLaunch.duration>319||initial.sourceLaunch.height!==height*65536)throw new Error('Original height-selected launch failed')
+        heightFixtures.push(initial)
+      }
+      ballFlightRecovery.validation.heightFixtures=heightFixtures
       const controller=createControlSession(native.core,controlConfig)
       const controlledAnimation=createControlAnimation(native.core,controlConfig.animation,
         new Map(actions.map((action)=>[action.actionId,decoded115.get(action.clipName)])),{baseFrame})
@@ -436,6 +488,10 @@ export async function prepareWeb({ reference = path.join(root, '.work/reference'
       const owned=ballTest.snapshot(),released=ballTest.launchFrom(controller.snapshot(),{kind:'loft'})
       if(!owned.owned||released.owned||JSON.stringify(owned.fixedPosition)!==JSON.stringify(released.fixedPosition))throw new Error('Owned-ball release changed its source position')
       playerBallRecovery.validation={ownedTicks,owned,released}
+      if(released.possession.state[0]!==0||released.possession.state[1]!==1||released.possession.state[9]!==0||
+          JSON.stringify(released.possession.history)!==JSON.stringify(owned.possession.history))throw new Error('Original ownership release changed unsupported history or retained its owner')
+      possessionRecovery.validation={fixture:'explicitly eligible unowned player1; attachment token1 supplied separately',
+        state:owned.possession,released:released.possession}
       locomotion = { ...tables.evidence, calibration: { runVariants: tables.runVariants, nativeSelectorCases: selectorCases,
         centerReferences: tables.actionHalfwords.slice(0, 110), loadedClipBank: 'mopsx115', supportedControlActions: actions.length },
         inspection: { actionChange: 'restart source phase; retain sparse pose and apply original per-key mirroring in the unlinked zero-heading branch; phase search, blends, heading offsets and callbacks remain unrecovered',
@@ -471,6 +527,9 @@ export async function prepareWeb({ reference = path.join(root, '.work/reference'
       ['ball-flight-recovery.json',JSON.stringify(ballFlightRecovery,null,2)+'\n'],
       ['ball-visual-phase.json',JSON.stringify(ballPhaseRecovery,null,2)+'\n'],
       ['player-ball-recovery.json',JSON.stringify(playerBallRecovery,null,2)+'\n'],
+      ['possession-recovery.json',JSON.stringify(possessionRecovery,null,2)+'\n'],
+      ['ball-boundary-recovery.json',JSON.stringify(boundaryRecovery,null,2)+'\n'],
+      ['action-events-recovery.json',JSON.stringify(eventsRecovery,null,2)+'\n'],
       ['ball-interaction-recovery.json',JSON.stringify(ballInteractionRecovery,null,2)+'\n'],
       ['action-transition-recovery.json',JSON.stringify(actionRecovery,null,2)+'\n'],
       ['ball-visual-recovery.json',JSON.stringify(ballVisualRecovery,null,2)+'\n'],

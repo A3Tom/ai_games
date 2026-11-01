@@ -27,7 +27,8 @@ export function createPlayerView({ manifest, native, getBytes, hash, paletteFor,
   function draw() {
     if (!model || !clip || !textures) return
     const key = Number($('motion-key').value)
-    const geometry = recoverPlayerGeometry(model, sampleMotionPose(clip, motionPhaseForKey(clip, key)), native.core, { baseFrame })
+    const phase=motionPhaseForKey(clip,key)
+    const geometry = recoverPlayerGeometry(model, sampleMotionPose(clip, phase), native.core, { baseFrame })
     const head = recoverPlayerHeadGeometry(headModel, geometry, native.core)
     const scene = createPlayerScene([geometry, head], normalization)
     normalization ??= { centreLoader: scene.centreLoader, scaleLoader: scene.scaleLoader }
@@ -38,6 +39,11 @@ export function createPlayerView({ manifest, native, getBytes, hash, paletteFor,
     context.putImageData(new ImageData(result.rgba, canvas.width, canvas.height), 0, 0)
     canvas.dataset.renderer = 'native-wasm'; canvas.dataset.clip = selected.id; canvas.dataset.key = key
     canvas.dataset.vertices = scene.counts.vertices; canvas.dataset.triangles = result.triangles
+    const start=clip.headerWords[4]<<16>>16,end=clip.headerWords[5]<<16>>16
+    const windowFlags=native.core.fifa98_action_window(0,phase,start,end)>>>0
+    canvas.dataset.attachmentFlags=windowFlags;canvas.dataset.attachmentActive=!!(windowFlags&0x8000)
+    $('motion-ball-window').textContent = start<0 && end<2 ? 'This motion has no ball attachment window.' :
+      windowFlags&0x4000 ? 'Ball attachment window ended.' : windowFlags&0x8000 ? 'Ball attachment window active.' : 'Before the ball attachment window.'
     $('motion-key-label').textContent = `Key ${key + 1} of ${clip.keyCount}`
     $('player-detail').textContent = `${selected.id} · ${scene.counts.vertices} original vertices · ${scene.counts.triangles} triangles · native skinning`
   }
@@ -78,8 +84,9 @@ export function createPlayerView({ manifest, native, getBytes, hash, paletteFor,
     const current = ++generation
     pause(); enable(false); clip = null; normalization = null
     context.clearRect(0, 0, canvas.width, canvas.height)
-    for (const key of ['clip', 'key', 'vertices', 'triangles']) delete canvas.dataset[key]
+    for (const key of ['clip', 'key', 'vertices', 'triangles','attachmentFlags','attachmentActive']) delete canvas.dataset[key]
     $('player-detail').textContent = ''; $('motion-key-label').textContent = ''
+    $('motion-ball-window').textContent=''
     if (!entry) { setStatus('No motion clips match your search.'); return }
     setStatus('Loading original player and motion data…')
     try {

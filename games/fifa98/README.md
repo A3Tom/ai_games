@@ -8,7 +8,7 @@ or a MIPS instruction interpreter.
 **Current status: one-player movement, test-owned ball carrying and grounded/airborne launches run in native WebAssembly; matches are not yet playable.**
 Recovered C code now includes simulation timing, rolling player-distance updates,
 airborne drag/spin and source random state, grounded and lofted target-launch numerics,
-original generated flight tables, animation-driven ball attachment and sprite phase,
+original generated flight tables, speed/height-selected flight time, animation-driven ball attachment and sprite phase,
 isolated ground bounce/rolling, model coordinate/UV conversion, the original
 grass grid, original player hierarchy/weighted skinning and motion delta decoding.
 A new native triangle renderer displays 201 meshes across 34 original stadium
@@ -90,19 +90,30 @@ two-to-one coordinate conversion.
 Press **C** or **Carry test ball** to start a test-owned ball at the player.
 Original interpolated animation markers, attachment guards and bounded ground
 follow arithmetic move it with the player. This supplies ownership explicitly;
-it does not acquire a loose ball through contact. Press **B** or **Launch test
+the original guarded ownership transition now updates its team state and history.
+It does not acquire a loose ball through contact. Press **B** or **Launch test
 ball** to release that ball from its current fixed position. Without a test-owned
 ball, launch places a new test ball at the player. Choose **Ground**, **Lofted**,
-**Curved loft** or **Reverse curved loft**. Original generated flight tables,
+**Curved loft**, **Reverse curved loft**, **Speed-selected loft** or
+**Height-selected loft**. The last two use the original solvers and let you edit
+the requested speed or height.
+Original generated flight tables,
 vertical launch solver, spin selection, air motion and isolated ground physics
 advance it to rest. Targets use the movement target, or a source-bounded forward
 target when stationary; the original action target producer remains unfinished.
 Sprite heading and four-state animation use consumed displacement and the
 original visual scheduler. The camera can follow either object or show both.
-Ground parameter10, loft duration index60, material0/0 and inspection cadence
+Ground parameter10, fixed loft duration index60, requested speed9/height16,
+material0/0 and inspection cadence
 are explicit fixture choices. Contact acquisition, kick-animation timing,
 opponents, scoring, match rules and online simulation remain unfinished.
 See [native/CONTROL_TEST.md](native/CONTROL_TEST.md).
+The free trajectory now uses the original radius-adjusted outside-pitch flag
+and stops at its crossing sample. Restarts remain unfinished. Four original
+net-plane predicates and their geometry are also recovered independently;
+collision responses are not connected to this test. See
+[native/BALL_BOUNDARY_RECOVERY.md](native/BALL_BOUNDARY_RECOVERY.md) and
+[native/POSSESSION_RECOVERY.md](native/POSSESSION_RECOVERY.md).
 Source sprite and palette evidence is in
 [native/BALL_VISUAL_RECOVERY.md](native/BALL_VISUAL_RECOVERY.md); mirrored and
 retained sparse-key evidence is in
@@ -110,6 +121,9 @@ retained sparse-key evidence is in
 Attachment and launch evidence is in
 [native/PLAYER_BALL_RECOVERY.md](native/PLAYER_BALL_RECOVERY.md) and
 [native/BALL_FLIGHT_RECOVERY.md](native/BALL_FLIGHT_RECOVERY.md).
+Preparation also runs original action calibration against available115 clips.
+It reads the exact discrete prefix keys to derive the source queue54 parameter,
+distance and heading; these values do not yet dispatch an animated kick.
 
 The **Player motions** tab renders the original high-detail body and separate
 head model with the original texture templates. The bright template colours
@@ -117,7 +131,13 @@ are source data; original face and kit composition remain unrecovered. The
 `hhead.psh` face slots also contain shared template pixels, rather than forty
 finished face images to select directly.
 Select any of 503 clips, scrub its
-keys, rotate the player or preview consecutive keys. Motion decoding, hierarchy
+keys, rotate the player or preview consecutive keys. The attachment-window
+reading now evaluates the original native flag initializer at the selected key.
+It shows when the clip's ball attachment begins and ends; it does not dispatch
+a kick. Callback-free nonloop phase advancement is also recovered separately;
+the football callback still requires the general launch path documented in
+[native/ACTION_EVENTS_RECOVERY.md](native/ACTION_EVENTS_RECOVERY.md).
+Motion decoding, hierarchy
 and weighted-vertex arithmetic execute in WebAssembly. The inspection cadence
 is twelve keys per second; it is not a recovered match clock. The preview uses
 unmirrored key poses, without interpolated transitions or gameplay motion
@@ -352,7 +372,7 @@ They also cover original ball drag/gravity, isolated ground contacts, all materi
 table entries, bounce-to-rest trajectories, local quaternion coefficients,
 hierarchical weighted geometry, packed motion deltas, source-phase selection,
 player speed/control arithmetic and pitch generation across normal and extreme
-integer inputs. Tests use no commercial
-game assets. Separate local validation against the supplied reference verifies
+integer inputs. Synthetic numerical tests are supplemented by local tests
+against the supplied reference, verifying
 asset hashes and native texture/model/pose conversion; this does not establish gameplay
 compatibility or a working match engine.
