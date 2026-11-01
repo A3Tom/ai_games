@@ -14,9 +14,11 @@ After the [GHCR workflow](./.github/workflows/ghcr.yml) has published the image,
 docker run -d --name ai-games --restart unless-stopped --pull always -p 14650:14650 -v ai-games-data:/data ghcr.io/a3tom/ai_games:latest
 ```
 
-Open <http://localhost:14650>. The dashboard links to Multiplayer Lab, Dots & Boxes, Minesweeper, Snow Drift, Space Cadet Pinball, and Sea Strike. No local Node installation or separate Vite process is needed.
+Open <http://localhost:14650>. The dashboard links to Multiplayer Lab, Dots & Boxes, Minesweeper, Snow Drift, Space Cadet Pinball, Overboard!, and Sea Strike. No local Node installation or separate Vite process is needed.
 
 Space Cadet Pinball runs the C++/SDL2 [SpaceCadetPinball engine](./games/pinball/vendor/) through WebAssembly and saves its top ten scores on the server. Its independent build downloads and verifies the same game resource archive used by the Flatpak package, then publishes the ready-to-serve game in `ghcr.io/a3tom/ai_games-pinball`. Collection builds copy that artifact into the main image. Resources stay outside Git; see the [pinball setup guide](./games/pinball/README.md) for provenance, custom resources, and builds without bundled data. The `ai-games-data` volume above preserves scores when the container is replaced. Compose configures its own named `pinball-data` volume; `docker compose down` keeps it, while `docker compose down -v` deletes it. Without a volume, scores survive a process restart but disappear when the container is removed. Scores are reported by the browser for casual play.
+
+Overboard! runs the original PlayStation game in a self-hosted browser emulator at `/overboard/`, with keyboard and controller input. Its independent build publishes the player in `ghcr.io/a3tom/ai_games-overboard`; collection builds copy that artifact into the main image. Local development imports the BIN/CUE disc from `reference-games/Overboard!` automatically; imported media and emulator downloads stay outside Git. Published artifacts let players select a local ZIP containing the complete BIN/CUE disc. See the [Overboard! setup guide](./games/overboard/README.md) for controls, saves, and bundling local media. This first version targets desktop; mobile controls remain a later step.
 
 To share it with another device on your network, open `http://<your-computer-LAN-IP>:14650` on that device, for example `http://192.168.1.20:14650`. On Linux, `hostname -I` lists your machine's addresses; choose the one for your Ethernet or Wi-Fi network. On Windows, use `ipconfig`; on macOS, look in Network settings.
 
@@ -38,7 +40,7 @@ Use `-p 14651:14650` in the run command if host port 14650 is occupied. The dash
 
 If you prefer Compose, copy [`docker-compose.yml`](./docker-compose.yml) to your host and run `docker compose up -d --pull always --wait`. It runs the same single image. Use `docker compose logs -f` and `docker compose down` to view logs and stop it. Configure `HOST_PORT`, relay limits, and `IMAGE_TAG` through a `.env` file beside the manifest.
 
-To build the collection from local source with the published Pinball artifact, use [`docker-compose.local.yml`](./docker-compose.local.yml):
+To build the collection from local source with the published Pinball and Overboard artifacts, use [`docker-compose.local.yml`](./docker-compose.local.yml):
 
 ```bash
 docker compose -f docker-compose.local.yml up --build -d
@@ -46,7 +48,7 @@ docker compose -f docker-compose.local.yml up --build -d
 VITE_RELAY_URL=ws://localhost:14650/relay pnpm --filter multiplayer-lab run dev
 ```
 
-The local dashboard, games, and relay share port 14650. Browser files in the container are production builds; rerun `docker compose -f docker-compose.local.yml up --build -d` after changing source files. Pinball's image is only a build input; the running collection remains one service.
+The local dashboard, games, and relay share port 14650. Browser files in the container are production builds; rerun `docker compose -f docker-compose.local.yml up --build -d` after changing source files. Pinball and Overboard require rebuilding their artifacts first, as shown below. Their images are build inputs; the running collection remains one service.
 
 To include local Pinball changes, build its artifact first, then rebuild the collection using BuildKit:
 
@@ -55,7 +57,17 @@ docker build -f games/pinball/Dockerfile -t ai-games-pinball:local .
 PINBALL_IMAGE=ai-games-pinball:local docker compose -f docker-compose.local.yml up --build -d
 ```
 
-The default artifact is `ghcr.io/${GHCR_REPOSITORY:-a3tom/ai_games}-pinball:latest`. Set `PINBALL_IMAGE_TAG` to choose a tag, or `PINBALL_IMAGE` for an exact tag or digest. `PINBALL_PLATFORM` defaults to `linux/amd64`, the artifact's published platform. A local build needs access to the artifact package when it is private; see [Hosting](#hosting).
+To include local Overboard changes and the reference disc, import the media and build its artifact before rebuilding the collection:
+
+```bash
+node games/overboard/scripts/prepare-media.mjs
+docker build -f games/overboard/Dockerfile -t ai-games-overboard:local .
+OVERBOARD_IMAGE=ai-games-overboard:local docker compose -f docker-compose.local.yml up --build -d
+```
+
+Without an imported disc, the Overboard artifact prompts players for their local disc ZIP. See its [container guide](./games/overboard/README.md) for mounting media into an existing collection container.
+
+The default artifacts are `ghcr.io/${GHCR_REPOSITORY:-a3tom/ai_games}-pinball:latest` and `ghcr.io/${GHCR_REPOSITORY:-a3tom/ai_games}-overboard:latest`. Set `PINBALL_IMAGE_TAG` or `OVERBOARD_IMAGE_TAG` to choose a tag, or `PINBALL_IMAGE` / `OVERBOARD_IMAGE` for an exact tag or digest. `PINBALL_PLATFORM` and `OVERBOARD_PLATFORM` default to `linux/amd64`, the artifacts' published platform. Local builds need access to both artifact packages when private; see [Hosting](#hosting).
 
 Use the same local file when checking logs or stopping the stack:
 
@@ -172,6 +184,7 @@ After the subscription reports a room, send game actions with `client.send({ act
 | Minesweeper | [`games/minesweeper/`](./games/minesweeper) | React, TypeScript, Vite |
 | Snow Drift | [`games/snow-drift/`](./games/snow-drift) | JavaScript, browser rendering |
 | Space Cadet Pinball | [`games/pinball/`](./games/pinball) | C++/SDL2 compiled with Emscripten to WebAssembly; TypeScript wrapper and server leaderboard |
+| Overboard! | [`games/overboard/`](./games/overboard) | Original PlayStation game through EmulatorJS; keyboard/controller input and browser-local saves |
 | Sea Strike | [`games/sea-strike/`](./games/sea-strike) | Vue, TypeScript, Vite; existing Battleship implementation |
 
 The games share a page header and footer through [`shared/game-shell.js`](./shared/game-shell.js), a small browser component that works with Vue, React, or plain JavaScript. Each game owns the content inside it. The common Node service lives in [`services/game-server/`](./services/game-server/). Sea Strike's design documents under `docs/01-*` through `docs/05-*`, phases, and tickets describe that game specifically; historical phases and tickets use the former `app/` and `relay/` source paths.
@@ -186,7 +199,7 @@ After [setting up pnpm](#local-development-and-checks), install dependencies, bu
 node scripts/build-collection.mjs --install --build
 ```
 
-This builds every game from source and writes `deploy/`. Thereafter, use `pnpm run build:collection` to rebuild source or `pnpm run package:collection` to assemble existing outputs. The catalogue drives the dashboard and direct builds. Docker builds ordinary apps in cached stages and copies Pinball from its independently published image; [Adding a game](./docs/ADDING_A_GAME.md) describes both patterns.
+This builds every game from source and writes `deploy/`. Thereafter, use `pnpm run build:collection` to rebuild source or `pnpm run package:collection` to assemble existing outputs. The catalogue drives the dashboard and direct builds. Docker builds ordinary apps in cached stages and copies Pinball and Overboard from their independently published images; [Adding a game](./docs/ADDING_A_GAME.md) describes both patterns.
 
 An all-source build requires Emscripten 4.0.23 when Pinball's generated engine is absent or out of date. Its [game Dockerfile](./games/pinball/Dockerfile) provides this toolchain. To reuse an extracted artifact already staged in `games/pinball/dist/`, run `node scripts/build-collection.mjs --install --build --skip-build=pinball`; this still installs Pinball's dependencies for tests. See [`games/pinball/README.md`](./games/pinball/README.md) for artifact extraction, engine and game-data instructions.
 
@@ -202,7 +215,7 @@ Run **Build game artifact images** manually with `force_rebuild` to refresh all 
 
 The workflow builds natively for Linux AMD64 with a 15-minute timeout. Pushes to `master` publish `latest`; `v*` Git tags publish matching image tags, such as `v1.2.3`. Every run also publishes `sha-<full-commit-sha>`. You can run **Publish image to GHCR** manually from the repository's Actions tab; only builds from `master` update `latest`.
 
-Publishing uses the workflow's automatic `GITHUB_TOKEN` with `packages: write`; no additional registry secret is needed. After the first successful run, the collection and Pinball artifact appear under the repository owner's **Packages**. [GHCR packages start private](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry). Make each package public for anonymous pulls, or log in with a personal access token (classic) that has `read:packages` and access to the required packages. Pulling the ready-made collection needs only its package; building it locally also needs the Pinball package:
+Publishing uses the workflow's automatic `GITHUB_TOKEN` with `packages: write`; no additional registry secret is needed. After the first successful run, the collection, Pinball artifact, and Overboard artifact appear under the repository owner's **Packages**. [GHCR packages start private](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry). Make each package public for anonymous pulls, or log in with a personal access token (classic) that has `read:packages` and access to the required packages. Pulling the ready-made collection needs only its package; building it locally also needs the Pinball and Overboard packages:
 
 ```bash
 # For a private package, enter your GitHub username and use the token as the password:
@@ -279,5 +292,7 @@ pnpm run package:collection   # Assemble existing outputs into deploy/
 ```
 
 For pinball hot reload, activate Emscripten 4.0.23, build the engine, and run `pnpm --filter space-cadet-pinball run dev` alongside the relay. Its Vite server proxies `/api` and `/telemetry` to port 14650; see [`games/pinball/README.md`](./games/pinball/README.md) for engine builds, game resources, API configuration, and storage details.
+
+For Overboard!, run `pnpm --filter overboard run dev`. Its preparation scripts download the pinned emulator and import the local reference disc when present before starting Vite. To include those files in Docker, rebuild its independent artifact and select it with `OVERBOARD_IMAGE`, as shown above. The original `reference-games/` directory is excluded from Docker's build context.
 
 After the workspace install, run `pnpm run dev` inside a game’s `games/<id>/` directory, or select its package from the root with `pnpm --filter <package-name> run dev`. For Snow Drift, use the staged collection as described in [its README](./games/snow-drift/README.md#how-to-run).

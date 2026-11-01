@@ -17,5 +17,6 @@ npm-debug.log*
 /services/game-server/data
 /games/pinball/public/engine
 /games/pinball/.engine-build
+/reference-games
 **/npm-debug.log*
 **/pnpm-debug.log*

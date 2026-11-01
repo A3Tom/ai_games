@@ -60,7 +60,8 @@ test('protects source roots, their parents and descendants from collection outpu
   const root = await fixture()
   for (const output of [root, path.dirname(root), path.join(root, 'games'),
     path.join(root, 'games/example'), path.join(root, 'games/another'),
-    path.join(root, 'services/game-server'), path.join(root, 'shared/assets')]) {
+    path.join(root, 'services/game-server'), path.join(root, 'shared/assets'),
+    path.join(root, 'reference-games'), path.join(root, 'reference-games/Overboard!')]) {
     await assert.rejects(assertCollectionOutput(root, output, [entry()]), /must be separate/)
   }
   await assertCollectionOutput(root, path.join(root, 'deploy'), [entry()])

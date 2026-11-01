@@ -72,5 +72,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             PINBALL_IMAGE=${{ fromJSON(needs.games.outputs.images).pinball }}
+            OVERBOARD_IMAGE=${{ fromJSON(needs.games.outputs.images).overboard }}
           cache-from: type=gha,scope=collection
           cache-to: type=gha,mode=max,scope=collection

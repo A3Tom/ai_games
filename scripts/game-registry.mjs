@@ -52,7 +52,7 @@ export async function assertCollectionOutput(root, output, games) {
   const protectedPaths = await Promise.all([
     root,
     ...games.map((game) => path.join(root, game.source)),
-    ...['games', 'services', 'packages', 'scripts', 'shared', 'docker', 'observability', 'docs',
+    ...['games', 'services', 'packages', 'scripts', 'shared', 'docker', 'observability', 'docs', 'reference-games',
       '.git', '.github', '.agents', '.codex', '.aws', '.vscode'].map((directory) => path.join(root, directory)),
   ].map(canonicalPath))
   const destination = await canonicalPath(output)

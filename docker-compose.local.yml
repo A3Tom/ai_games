@@ -1,4 +1,4 @@
-# Build the collection from local source, using the published Pinball artifact.
+# Build the collection from local source, using published game artifacts.
 services:
   games:
     build:
@@ -6,6 +6,8 @@ services:
       args:
         PINBALL_IMAGE: "${PINBALL_IMAGE:-ghcr.io/${GHCR_REPOSITORY:-a3tom/ai_games}-pinball:${PINBALL_IMAGE_TAG:-latest}}"
         PINBALL_PLATFORM: "${PINBALL_PLATFORM:-linux/amd64}"
+        OVERBOARD_IMAGE: "${OVERBOARD_IMAGE:-ghcr.io/${GHCR_REPOSITORY:-a3tom/ai_games}-overboard:${OVERBOARD_IMAGE_TAG:-latest}}"
+        OVERBOARD_PLATFORM: "${OVERBOARD_PLATFORM:-linux/amd64}"
     restart: unless-stopped
     ports:
       - "${HOST_PORT:-14650}:14650"

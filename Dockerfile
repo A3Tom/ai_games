@@ -1,10 +1,13 @@
 # syntax=docker/dockerfile:1
 
-# Pinball is built and published independently. Its static artifact can be copied
-# into a collection targeting any runtime platform; no artifact code runs here.
+# Pinball and Overboard are built and published independently. Their static
+# artifacts can target any runtime platform; no artifact code runs here.
 ARG PINBALL_IMAGE=ghcr.io/a3tom/ai_games-pinball:latest
 ARG PINBALL_PLATFORM=linux/amd64
+ARG OVERBOARD_IMAGE=ghcr.io/a3tom/ai_games-overboard:latest
+ARG OVERBOARD_PLATFORM=linux/amd64
 FROM --platform=${PINBALL_PLATFORM} ${PINBALL_IMAGE} AS pinball-assets
+FROM --platform=${OVERBOARD_PLATFORM} ${OVERBOARD_IMAGE} AS overboard-assets
 
 # Each game's source and build have their own cache. Dependency layers share the
 # workspace lockfile, so a dependency change can invalidate multiple game layers.
@@ -64,6 +67,7 @@ COPY --from=playground-builder /workspace/games/playground/dist/ ./games/playgro
 COPY --from=dots-and-boxes-builder /workspace/games/dots-and-boxes/dist/ ./games/dots-and-boxes/dist/
 COPY --from=minesweeper-builder /workspace/games/minesweeper/dist/ ./games/minesweeper/dist/
 COPY --from=sea-strike-builder /workspace/games/sea-strike/dist/ ./games/sea-strike/dist/
+COPY --from=overboard-assets /dist/ ./games/overboard/dist/
 COPY --from=pinball-assets /dist/ ./games/pinball/dist/
 RUN node scripts/build-collection.mjs /collection
 

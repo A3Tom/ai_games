@@ -50,6 +50,16 @@
     "build": true
   },
   {
+    "id": "overboard",
+    "title": "Overboard!",
+    "description": "Sail into the original PlayStation adventure with keyboard or controller input and local saves.",
+    "icon": "🏴‍☠️",
+    "tags": ["PlayStation", "Controller", "Solo"],
+    "path": "overboard",
+    "source": "games/overboard",
+    "build": true
+  },
+  {
     "id": "sea-strike",
     "title": "Sea Strike",
     "description": "Place your fleet and challenge a friend in a browser-based Battleship prototype.",
